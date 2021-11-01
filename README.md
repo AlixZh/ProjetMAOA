@@ -20,7 +20,7 @@ Q : capacité maximale de chaque véhicule
 k : flotte, nombre de véhicule
     int, chaque véhicule est noté par un indice de 1 à k
 
-d : demande du client i au temps t, 1<=i<=n, 1<=t<=l
+d : demande du client i à la période t, 1<=i<=n, 1<=t<=l
     matrice de taille n*l
 
 L0 : capacité de stockage maximale au noeud 0 (centre de dépot) pour chacun des clients
