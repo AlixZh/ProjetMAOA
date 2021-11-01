@@ -34,4 +34,4 @@ h : coût de stockage unitaire
     
 ## Fichiers 
 
-tools.py : fichier contenant des fonctions pour récupérer les instances, calculer les coûts de transport pour les instances A et B
+tools.jl : fichier contenant des fonctions pour récupérer les instances, calculer les coûts de transport pour les instances A et B
