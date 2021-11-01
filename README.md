@@ -32,6 +32,13 @@ L : capacité de stockage maximale du noeud i
 h : coût de stockage unitaire
     vecteur de taille n+1, h[i] : coût de stockage unitaire du noeud i,  0 <= i <= n
     
+coord : coordonnées des positions des clients
+        vecteur de tuple de taille n+1
+    
 ## Fichiers 
 
 tools.jl : fichier contenant des fonctions pour récupérer les instances, calculer les coûts de transport pour les instances A et B
+
+
+## Lien du rapport
+https://fr.overleaf.com/read/pxwfbwqkvnym 
