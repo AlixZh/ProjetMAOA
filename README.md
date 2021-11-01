@@ -34,6 +34,8 @@ h : coût de stockage unitaire
     
 coord : coordonnées des positions des clients
         vecteur de tuple de taille n+1
+
+cij : coût de transport de i à j, calculer par des fonctions à partir des coordonnées de i et j
     
 ## Fichiers 
 
