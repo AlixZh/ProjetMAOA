@@ -20,6 +20,7 @@ function Read_file(filename)
 	coord=[] #coordonnees des positions des clients et du centre de depot
 	d=[] #demande du client i au temps t
 	h=[] # coût de stockage unitaire
+	mc=0
 	
     open(filename) do f
 		for (i,line) in enumerate(eachline(f))
@@ -67,12 +68,11 @@ function Read_file(filename)
 	if(typeA==1)
 		#stock au depot non limite
 		#capacite de production infinie
-		d=Dict("n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k)
+		d=Dict("type"=>typeA,"n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k)
 		#return n,L0,L,coord,h,l,d,u,f,C,Q,k
 		return d
 	elseif (typeA==2)
-		d=Dict("n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k,"mc" => mc)
-		#return n,L0,L,coord,h,l,d,u,f,C,Q,k,mc
+		d=Dict("type"=>typeA,"n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k,"mc" => mc)
 		return d
 	else
 		println("probleme fichier instance : ",filename)
