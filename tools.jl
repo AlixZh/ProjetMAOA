@@ -21,7 +21,6 @@ function Read_file(filename)
 	d=[] #demande du client i au temps t
 	h=[] # coût de stockage unitaire
 	mc=0
-	
     open(filename) do f
 		for (i,line) in enumerate(eachline(f))
 			x = split(line," ") 
@@ -61,7 +60,7 @@ function Read_file(filename)
 				L[x1+1] = parse(Float64,x[8])
 				L0[x1+1] = parse(Float64,x[10])
 				h[x1+1] = parse(Float64,x[6])
-				coord[x1+1] = (parse(Float64,x[2] ) ,parse(Float64,x[2]))   
+				coord[x1+1] = (parse(Float64,x[2] ) ,parse(Float64,x[3]))   
 			end
 		end
 	end
@@ -73,6 +72,7 @@ function Read_file(filename)
 		return d
 	elseif (typeA==2)
 		d=Dict("type"=>typeA,"n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k,"mc" => mc)
+		#return n,L0,L,coord,h,l,d,u,f,C,Q,k,mc
 		return d
 	else
 		println("probleme fichier instance : ",filename)
@@ -103,26 +103,29 @@ function coutB(xi,xj,mc)
 	return mc*sqrt( (xi[1]-xj[1])*(xi[1]-xj[1]) + (xi[2]-xj[2])*(xi[2]-xj[2]) )
 end 
 
-
+function matrix_cout(data)
+	c=zeros(data["n"]+1,data["n"]+1)
+	for i in [1:data["n"]+1;] 
+		for j in [1:data["n"]+1;] 
+			if(data["type"]==1)
+				c[i,j] = coutA(data["coord"][i], data["coord"][j])
+			elseif(data["type"] == 2)
+				c[i,j] = coutB(data["coord"][i], data["coord"][j])
+			else 
+				println("Probleme de type dans le calcul des couts")
+				return c
+			end
+		end
+	end
+	return c
+end
 ######Tests
 dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
 println(dataA_014_ABS1_15_1)
 println(dataA_014_ABS1_15_1["n"])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+println("matrice cout : ")
+println(matrix_cout( dataA_014_ABS1_15_1))
 
 
 
