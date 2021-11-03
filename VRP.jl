@@ -79,7 +79,7 @@ end
 
 
 
-#FONCTIONNE PAS
+#FONCTIONNE 
 dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
 qq=dataA_014_ABS1_15_1["d"][:,2]
 dd=[1 4 8]
