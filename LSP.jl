@@ -37,83 +37,50 @@ function PL_LSP(n, l, f, u, d, h, L, M)
            @constraint(m, I[i][t-1] + q[i][t] = d[i][t] + I[i][t] ) # Contrainte (2)
            @constraint(m, I[i][t-1] + q[i][t] <= L[i] ) # Contrainte (5)
 
-# Il est important de nommer les variables pour récupérer la solution duale
+    # On n'en n'a pas besoin ici mais il peut être important de nommer les variables pour récupérer la solution duale
+    #  Pour l'afficher, on fera println("\t c1 = ", -dual(c1)) # la fonction dual renvoie le coût réduit qui est l'opposé de la variable duale en maximisation
 
    end
 
-   print(m)
-   println()
+# Affichages
+   #Affichage du modèle
+    println("Affichage du modèle avant résolution:")
+    print(m)
+    println()
 
-   optimize!(m)
+    #Résolution du problème d'optimisation linéaire m par le solveur GLPK
+    println("Résolution par le solveur linéaire choisi")
+    optimize!(m)
+    println()
    
-   println(solution_summary(m, verbose=true))
+    # Affiche tous les détails d'une solution à l'écran
+    println("Affichage de tous les détails de la solution avec la commande solution_summary")
+    println(solution_summary(m, verbose=true))
+    println()
 
-   status = termination_status(m)
+    # Mais on peut vouloir récupérer juste une information précise
+    println("Récupération et affichage \"à la main\" d'informations précises")
+    status = termination_status(m)
 
-   if status == JuMP.MathOptInterface.OPTIMAL
-       println("Valeur optimale = ", objective_value(m))
-       println("Solution primale optimale :")
-      S = Bool[]
-       for i= 1:nv(G)
-         println("\t x[",i,"] = ", value(x[i]))
-         if (value(x[i])<0001) 
-           push!(S,0)
-         else
-           push!(S,1)
-         end
-       end
-       println("Temps de résolution :", solve_time(m))
-       return S
-   else
-      println("Problème lors de la résolution")
-   end
-
+    if status == INFEASIBLE
+        println("Le problème n'est pas réalisable")
+    elseif status == UNBOUNDED
+        println("Le problème est non borné")
+    elseif status == OPTIMAL # ou JuMP.MathOptInterface.OPTIMAL
+        println("Valeur optimale = ", objective_value(m))
+        println("Solution optimale :")
+        for i= 1:l
+            println("\t p[",i,"] = ", value(p[i]))
+        for i= 1:l
+            println("\t y[",i,"] = ", value(y[i]))
+        for i= 1:n
+            for j= 1:l
+                println("\t I[",i,"][",j,"] = ", value(I[i][j]))    
+        for i= 1:n
+            for j= 1:l
+                println("\t q[",i,"][",j,"] = ", value(q[i][j]))
+        println("Temps de résolution :", solve_time(m))
+    else
+        println("Problème lors de la résolution")
+    end
 end
-
-
-
-
-
-
-
-
-
-
-#Affichage du modèle
-println("Affichage du modèle avant résolution:")
-print(m)
-println()
-
-#Résolution du problème d'optimisation linéaire m par le solveur GLPK
-println("Résolution par le solveur linéaire choisi")
-optimize!(m)
-println()
-
-# Affiche tous les détails d'une solution à l'écran
-println("Affichage de tous les détails de la solution avec la commande solution_summary")
-println(solution_summary(m, verbose=true))
-println()
-
-
-# Mais on peut vouloir récupérer juste une information précise
-println("Récupération et affichage \"à la main\" d'informations précises")
-status = termination_status(m)
-
-if status == INFEASIBLE
-    println("Le problème n'est pas réalisable")
-elseif status == UNBOUNDED
-    println("Le problème est non borné")
-elseif status == OPTIMAL
-    println("Valeur optimale = ", objective_value(m))
-    println("Solution primale optimale :")
-    println("\t x = ", value(x))
-    println("\t y = ", value(y))
-    println("Solution duale optimale :")
-    println("\t c1 = ", -dual(c1)) # la fonction dual renvoie le coût réduit qui est l'opposé de la variable duale en maximisation
-    println("\t c2 = ", -dual(c2))
-    println("\t c3 = ", -dual(c3))
-    println("Temps de résolution :", solve_time(m))
-else
-    println("Problème lors de la résolution")
-end
-
