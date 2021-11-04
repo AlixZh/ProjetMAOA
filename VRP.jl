@@ -12,11 +12,11 @@ function PL_VRP(lqi,ldi,data)
 	"""
 	Parametres : 
 	lqi : (vecteur), lqi[i] quantité a etre livree au vendeur i, 1<=i<=n
-	lqi[i] : le client i doit recevoir ldi[i] 1<i<=n, 
+	lqi[i] : le client i doit recevoir lqi[i] 1<i<=n, 
 	ldi : les revendeurs qui vont etre livree, ldi[i] : contient le nom du revendeur, 1<=ldi[i]<=n
 	1<=i<=length(ldi)
 	l'indice 1 est bien le client et non le centre de depot dans ldi
-	data : dictionnaire contenant les info d une instance
+	data : dictionnaire contenant les infos d une instance
 	"""
 
 	lci=matrix_cout(data) #l'indice 1 est le centre de depot
