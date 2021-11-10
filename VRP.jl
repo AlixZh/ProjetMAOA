@@ -55,9 +55,9 @@ function PL_VRP(data,t)
 	println()
 
 	# Affiche tous les détails d'une solution à l'écran
-	println("Affichage de tous les détails de la solution avec la commande solution_summary")
-	println(solution_summary(m, verbose=true))
-	println()
+	#println("Affichage de tous les détails de la solution avec la commande solution_summary")
+	#println(solution_summary(m, verbose=true))
+	#println()
 
 
 	# Mais on peut vouloir récupérer juste une information précise
