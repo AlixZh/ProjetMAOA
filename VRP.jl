@@ -11,8 +11,7 @@ const UNBOUNDED = JuMP.MathOptInterface.DUAL_INFEASIBLE;
 function PL_VRP(data,t)
 	"""
 	Parametres : 
-	lqi : (vecteur), lqi[i] quantité a etre livree au vendeur i, 1<=i<=n
-	lqi[i] : le client i doit recevoir ldi[i] 1<i<=n, 
+	t : l'instant de temps a considerer
 	ldi : les revendeurs qui vont etre livree, ldi[i] : contient le nom du revendeur, 1<=ldi[i]<=n
 	1<=i<=length(ldi)
 	l'indice 1 est bien le client et non le centre de depot dans ldi
@@ -79,9 +78,6 @@ function PL_VRP(data,t)
 end
 
 
-
-
-#FONCTIONNE PAS
 dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
 qq=dataA_014_ABS1_15_1["d"][:,2]
 PL_VRP(dataA_014_ABS1_15_1,2)
