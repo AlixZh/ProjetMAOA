@@ -21,8 +21,8 @@ function Read_file(filename)
 	d=[] #demande du client i au temps t
 	h=[] # coût de stockage unitaire
 	mc=0
-    open(filename) do f
-		for (i,line) in enumerate(eachline(f))
+    open(filename) do fichier
+		for (i,line) in enumerate(eachline(fichier))
 			x = split(line," ") 
 			if(x[1]=="Type")
 				typeA=Int(parse(Float64,x[2]))
@@ -119,7 +119,6 @@ function matrix_cout(data)
 	end
 	return c
 end
-
 ######Tests
 dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
 println(dataA_014_ABS1_15_1)
