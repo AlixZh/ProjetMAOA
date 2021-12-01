@@ -119,13 +119,14 @@ function matrix_cout(data)
 	end
 	return c
 end
-######Tests
-dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
-println(dataA_014_ABS1_15_1)
-println(dataA_014_ABS1_15_1["n"])
 
-println("matrice cout : ")
-println(matrix_cout( dataA_014_ABS1_15_1))
+#Tests
+# dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
+# println(dataA_014_ABS1_15_1)
+# println(dataA_014_ABS1_15_1["n"])
+
+# println("matrice cout : ")
+# println(matrix_cout( dataA_014_ABS1_15_1))
 
 
 

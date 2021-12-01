@@ -1,86 +1,105 @@
 using JuMP
 using CPLEX
 
-#include("tools.jl")
-const OPTIMAL = JuMP.MathOptInterface.OPTIMAL
-const INFEASIBLE = JuMP.MathOptInterface.INFEASIBLE
-const UNBOUNDED = JuMP.MathOptInterface.DUAL_INFEASIBLE;
+include("tools.jl")
+# const OPTIMAL = JuMP.MathOptInterface.OPTIMAL
+# const INFEASIBLE = JuMP.MathOptInterface.INFEASIBLE
+# const UNBOUNDED = JuMP.MathOptInterface.DUAL_INFEASIBLE;
 
+function PL_VRP(pathFileData, demande, t, affichage)
+    """
+    Paramètres : 
+    pathFileData le chemin du fichier de donnée
+	demande un tableau [1:n, 1:l] de taille n*l, demande[i,t] est la demande du client i au temps t, soit q[i,t] dans la notation LSP
+	t l'instant de temps à considérer
+	affichage qui vaut true si on veut afficher les solutions trouvées
+    """
 
-#le centre/source de dépot a un noeud d'indice 1 
-function PL_VRP(data,t)
-	"""
-	Parametres : 
-	t : l'instant de temps a considerer
-	ldi : les revendeurs qui vont etre livree, ldi[i] : contient le nom du revendeur, 1<=ldi[i]<=n
-	1<=i<=length(ldi)
-	l'indice 1 est bien le client et non le centre de depot dans ldi
-	data : dictionnaire contenant les info d une instance
-	"""
+	# Récupération des données
+    data = Read_file(pathFileData)
+    k = data["k"] # k le nombre de véhicules
+    Q = data["Q"] # Q la capacité maximale de chaque véhicule
+	n = data["n"] # n le nombre de clients
 
-	lci=matrix_cout(data) #l'indice 1 est le centre de depot
-						  # le cout du client i et j dans lci : ldi[i+1] et ldi[j+1]
-						  
-	ldi = data["d"][:,t]
+	cout = matrix_cout(data) # le cout de transport du client i (0:n) au j (0:n) (l'indice 1 est le centre de depot) 	
+
 	# Création d'un modèle. Ce modèle fera l'interface avec le solveur GLPK
 	m = Model(CPLEX.Optimizer)
-	# Création des variables
-	@variable(m, 0<=x[1:data["n"]+1 , 1:data["n"]+1]<=1,Int)
-	@variable(m,0<=w[1:data["n"]]) #indice 1 correspond au client 1
-	@objective(m, Min, sum(x .*lci) )
-	
 
-	@constraint(m,sum(x[1,:])<=data["k"]) #indice 1 correspond au depot 0
-	@constraint(m,sum(x[:,1])<=data["k"])
-	for i in [1:length(ldi);]
-		@constraint(m,sum(x[Int(i+1),:])==1)
-		@constraint(m,sum(x[:,Int(i+1)])==1)
-		@constraint(m,0<=w[i]<=data["Q"])
-		for j in [1:length(ldi);]
-			@constraint(m, (Int(ldi[i])-(data["Q"]+Int(ldi[i]))*(1-x[i+1,j+1]))<= (w[i]-w[j]))
+	# Création des variables
+	@variable(m, x[0:n, 0:n], Bin) # x[i,j] associé à l'arête (i,j)
+	# for i in 0:n # PB
+    #     delete(m, x[i, i]) # On peut supprimer les variables x[i,i] comme il n'y a pas d'arête d'un noeud vers lui-même
+    # end
+	@variable(m, 0<= w[1:n] <=Q) # indice 1 correspond au client 1
+	
+	# Fonction objectif
+	@objective(m, Min, sum(cout[i+1,j+1]*x[i,j] for i in 0:n for j in 0:n)) # PB soit sum(x .*cout) # C'est-à-dire 
+	
+	# Ajout des contraintes dans le modèle
+	@constraint(m, sum(x[0,:])<=k) # Contrainte (6)
+	@constraint(m, sum(x[:,0])<=k) # Contrainte (7)
+
+	for i in 1:n
+		@constraint(m, sum(x[i,:])==1) # Contrainte (8)
+		@constraint(m, sum(x[:,i])==1) # Contrainte (9)
+
+		for j in 1:n
+			@constraint(m, (demande[i,t]-(Q + demande[i,t])*(1 - x[i,j]))<= (w[i]-w[j])) # Contrainte (10)
 		end
 	end
 
-	#for e in edges(G)  
-	#if(src(e)!=1 && dst(e)!=1)
-	#Affichage du modèle
-	println("Affichage du modèle avant résolution:")
-	print(m)
-	println()
+	# Pour le debug :
+    # Ecrit sur disque le PL au format lp
+    # write_to_file(m, "model_VRP.lp")
 
-	#Résolution du problème d'optimisation linéaire m par le solveur GLPK
-	println("Résolution par le solveur linéaire choisi")
-	optimize!(m)
-	println()
+	if affichage
+		# Affichages
+		#for e in edges(G)  
+		#if(src(e)!=1 && dst(e)!=1)
+		#Affichage du modèle
+		println("Affichage du modèle avant résolution:")
+		print(m)
+		println()
 
-	# Affiche tous les détails d'une solution à l'écran
-	#println("Affichage de tous les détails de la solution avec la commande solution_summary")
-	#println(solution_summary(m, verbose=true))
-	#println()
+		#Résolution du problème d'optimisation linéaire m par le solveur GLPK
+		println("Résolution par le solveur linéaire choisi")
+		optimize!(m)
+		println()
 
+		# Affiche tous les détails d'une solution à l'écran
+		#println("Affichage de tous les détails de la solution avec la commande solution_summary")
+		#println(solution_summary(m, verbose=true))
+		#println()
 
-	# Mais on peut vouloir récupérer juste une information précise
-	println("Récupération et affichage \"à la main\" d'informations précises")
-	status = termination_status(m)
+		# Mais on peut vouloir récupérer juste une information précise
+		println("Récupération et affichage \"à la main\" d'informations précises")
+		status = termination_status(m)
 
-	if status == INFEASIBLE
-		println("Le problème n'est pas réalisable")
-	elseif status == UNBOUNDED
-		println("Le problème est non borné")
-	elseif status == OPTIMAL
-		println("Valeur optimale = ", objective_value(m))
-		println("Solution primale optimale :")
-		println("\t x = ", value.(x))
-		println("Temps de résolution :", solve_time(m))
-	else
-		println("Problème lors de la résolution")
-	end
+		if status == INFEASIBLE
+			println("Le problème n'est pas réalisable")
+		# elseif status == UNBOUNDED
+		# 	println("Le problème est non borné")
+		elseif status == OPTIMAL
+			println("Valeur optimale = ", objective_value(m))
+			println("Solution optimale :")
+			println("\t x = ", value.(x))
+			println("\t x = ", value.(w))
+			println("Temps de résolution :", solve_time(m))
+		else
+			println("Problème lors de la résolution")
+		end
+	else # Sans l'affichage, il faut qd même optimiser
+        optimize!(m)
+    end
+	
+	return value.(x), value.(w) # On récupère les valeurs des variables de décision
 end
 
-
-dataA_014_ABS1_15_1=Read_file("./PRP_instances/A_014_ABS1_15_1.prp")
-qq=dataA_014_ABS1_15_1["d"][:,2]
-PL_VRP(dataA_014_ABS1_15_1,2)
+# Tests
+x, w = PL_VRP("PRP_instances/A_014_ABS1_15_1.prp", q, 2, false) # Le q vient de LSP.jl
+# println("x=", x)
+# println("w=", w)
 
 
 

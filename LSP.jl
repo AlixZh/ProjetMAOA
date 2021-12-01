@@ -1,6 +1,8 @@
 using JuMP
 using CPLEX
 
+include("tools.jl")
+
 function PL_LSP(pathFileData, SC, affichage)
     """
     Paramètres : 
@@ -18,9 +20,8 @@ function PL_LSP(pathFileData, SC, affichage)
     d = data["d"] # d tableau de dimension n*l, d[i,t] exprime la demande du revendeur i au temps t
     h = data["h"] # h tableau de dimension n, h[i] exprime le coût de stockage unitaire du revendeur i
     L = data["L"] # L tableau de dimension n, L[i] exprime la capacité de stockage maximale chez le revendeur i
+    L0 = data["L0"] # L0 tableau de dimension n, L0[i] exprime la quantité en stock à la fin de la période 0 (càd au début) pour i PB c'est ca??
     M = data["C"] # M constante big M qui se doit d'être supérieure à toute valeur raisonnable que peut prendre la quantité produite sur une période
-
-#   L0 = data["L0"] pour cste en + ?
 
     #PB +1 aux indices de h, L et L0 ?
 #    println("h=",h)
@@ -33,6 +34,7 @@ function PL_LSP(pathFileData, SC, affichage)
 #    println("h(n)=",h[n])
 #    println("u=",u)
 #    println("f=",f)
+    println("d=",d)
 
     # Création d'un modèle, ce modèle fera l'interface avec le solveur CPLEX
     m = Model(CPLEX.Optimizer)
@@ -56,6 +58,9 @@ function PL_LSP(pathFileData, SC, affichage)
     end
    
    # Ajout des contraintes dans le modèle
+   for i in 0:n
+       @constraint(m, I[i, 0] == L0[i+1]) # Initialisation des I au temps 0
+   end
 
    for t in 1:l
        @constraint(m, I[0,t-1] + p[t] == sum(q[i,t] for i = 1:n) + I[0,t] ) # Contrainte (1)
@@ -69,6 +74,10 @@ function PL_LSP(pathFileData, SC, affichage)
     # On n'en n'a pas besoin ici mais il peut être important de nommer les variables pour récupérer la solution duale
     # Pour l'afficher, on fera println("\t c1 = ", -dual(c1)) # la fonction dual renvoie le coût réduit qui est l'opposé de la variable duale en maximisation
     end
+
+    # Pour le debug :
+    # Ecrit sur disque le PL au format lp
+    # write_to_file(m, "model_LSP.lp")
 
     if affichage
     # Affichages
@@ -98,26 +107,32 @@ function PL_LSP(pathFileData, SC, affichage)
         elseif status == OPTIMAL # ou JuMP.MathOptInterface.OPTIMAL
             println("Valeur optimale = ", objective_value(m))
             println("Solution optimale :")
-            for i= 1:l
-                print("\t p[",i,"] = ", value(p[i]))
-            end
-            println("")
-            for i= 1:l
-                print("\t y[",i,"] = ", value(y[i]))
-            end
-            println("")
-            for i= 1:n
-                for j= 1:l
-                    print("\t I[",i,",",j,"] = ", value(I[i,j]))    
-                end
-                println("")
-            end
-            for i= 1:n
-                for j= 1:l
-                    print("\t q[",i,",",j,"] = ", value(q[i,j]))
-                end
-                println("")
-            end
+            
+			println("\t p = ", value.(p))
+			println("\t y = ", value.(y))
+			println("\t I = ", value.(I))
+			println("\t q = ", value.(q))
+            
+            # for i= 1:l
+            #     print("\t p[",i,"] = ", value(p[i]))
+            # end
+            # println("")
+            # for i= 1:l
+            #     print("\t y[",i,"] = ", value(y[i]))
+            # end
+            # println("")
+            # for i= 1:n
+            #     for j= 1:l
+            #         print("\t I[",i,",",j,"] = ", value(I[i,j]))    
+            #     end
+            #     println("")
+            # end
+            # for i= 1:n
+            #     for j= 1:l
+            #         print("\t q[",i,",",j,"] = ", value(q[i,j]))
+            #     end
+            #     println("")
+            # end
             println("Temps de résolution :", solve_time(m))
         else
             println("Problème lors de la résolution")
@@ -126,15 +141,24 @@ function PL_LSP(pathFileData, SC, affichage)
         optimize!(m)
     end
 
+
+    # for i=1:n #PB test si d = q
+    #     for t= 1:l
+    #         println("PB d=q?",d[i,t]==value.(q)[i,t])
+    #     end
+    # end
+
+
     return value.(p), value.(y), value.(I), value.(q) # On récupère les valeurs des variables de décision
 end
 
-# Test
-p, y, I, q = PL_LSP("PRP_instances/A_014_ABS1_15_2.prp", 0, false)
+# Tests
+p, y, I, q = PL_LSP("PRP_instances/A_014_ABS1_15_1.prp", 0, false)
 println("p=", p)
 println("y=", y)
 println("I=", I)
 println("q=", q)
 
-#PB y vaut 1 toujours mm qd p vaut 0
-#PB p vaut tjr 0 ??
+#PB y pas binaire ?
+#PB on doit avoir d = q à la fin ?
+#PB Iit (Variable de stockage): quantit´e en stock `a la fin de la p´eriode t pour i; pour t = 0 c'est différent de 0, normal ? C'est L0 ?
