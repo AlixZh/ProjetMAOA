@@ -2,7 +2,7 @@
 
 ## Type des données
 
-Les données des instances seront stockées dans un dictionnaire. Les keys sont : n, l, u, f, C, Q, k, d, L0, L, h, coord et mc (si instance B).
+Les données des instances seront stockées dans un dictionnaire. Les clés du disctionnaire sont : n, l, u, f, C, Q, k, d, L0, L, h, coord et mc (si instance B).
 
 n : nombre de clients
     int
