@@ -25,7 +25,7 @@ k : flotte, nombre de véhicule
 d : demande du client i à la période t, 1<=i<=n, 1<=t<=l
     matrice de taille n*l
 
-L0 : capacité de stockage maximale au noeud 0 (centre de dépot) pour chacun des clients
+L0 : capacité de stockage initial (t = 0) pour chacun des clients
      vecteur de taille n+1, L0[i+1] : capacité de stockage maximale au noeud 0 pour le noeud i, 0 <= i <=n
      
 L : capacité de stockage maximale du noeud i
