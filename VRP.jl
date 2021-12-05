@@ -6,17 +6,16 @@ include("tools.jl")
 # const INFEASIBLE = JuMP.MathOptInterface.INFEASIBLE
 # const UNBOUNDED = JuMP.MathOptInterface.DUAL_INFEASIBLE;
 
-function PL_VRP(pathFileData, demande, t, affichage)
+function PL_VRP(data, demande, t, affichage)
     """
     Paramètres : 
-    pathFileData le chemin du fichier de donnée
+    data le dictionnaire contenant les données de l'instance
 	demande un tableau [1:n, 1:l] de taille n*l, demande[i,t] est la demande du client i au temps t, soit q[i,t] dans la notation LSP
 	t l'instant de temps à considérer
 	affichage qui vaut true si on veut afficher les solutions trouvées
     """
 
 	# Récupération des données
-    data = Read_file(pathFileData)
     k = data["k"] # k le nombre de véhicules
     Q = data["Q"] # Q la capacité maximale de chaque véhicule
 	n = data["n"] # n le nombre de clients
@@ -96,17 +95,16 @@ function PL_VRP(pathFileData, demande, t, affichage)
 	return value.(x), value.(w) # On récupère les valeurs des variables de décision
 end
 
-function VRP_to_Circuit(pathFileData, x, affichage) 
+function VRP_to_Circuit(data, x, affichage) 
     """
 	Permet de représenter la solution renvoyé par le PL sous forme de liste de liste (représentant les circuits, dans l'ordre de passage)
     Paramètres : 
-    pathFileData le chemin du fichier de donnée
+    data le dictionnaire contenant les données de l'instance
 	x les valeurs des variables binaires xij qui vallent 1 si un véhicule utilise l’arc (i, j) 
 	affichage qui vaut true si on veut afficher le graphe
     """
 
 	# Récupération des données
-    data = Read_file(pathFileData)
 	n = data["n"] # n le nombre de clients	
 
 	circuits = Vector{Int64}[]
@@ -148,13 +146,16 @@ end
 
 # Tests
 pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+data = Read_file(pathFileData)
 
 # Récupérer le q dans LSP
-p, y, I, q = PL_LSP(pathFileData, 0, false)
+p, y, I, q = PL_LSP(data, 0, false)
 
-x, w = PL_VRP(pathFileData, q, 2, false) # Le q vient de LSP.jl
+x, w = PL_VRP(data, q, 2, false) # Le q vient de LSP.jl
 println("x=", x)
 println("w=", w)
 
-circuits = VRP_to_Circuit(pathFileData, x, false)
+circuits = VRP_to_Circuit(data, x, false)
 println("Circuits =", circuits)
+
+# PB Voir VRP_Heuristique pour évaluer le coût des circuits

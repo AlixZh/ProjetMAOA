@@ -3,16 +3,15 @@ using CPLEX
 
 include("tools.jl")
 
-function PL_LSP(pathFileData, SC, affichage)
+function PL_LSP(data, SC, affichage)
     """
     Paramètres : 
-    pathFileData le chemin du fichier de donnée
+    data le dictionnaire contenant les données de l'instance
     SC sert pour l'heuristique et représente le coût de visite du client i à la période t (vaut 0 si on n'est pas dans le cas heuristique)
     affichage qui vaut true si on veut afficher les solutions trouvées
     """
 
     # Récupération des données
-    data = Read_file(pathFileData)
     n = data["n"] # n le nombre de revendeurs (en comptant le fournisseur)
     l = data["l"] # l horizon de planification
     f = data["f"] # f coût fixe par période de production
@@ -34,7 +33,7 @@ function PL_LSP(pathFileData, SC, affichage)
 #    println("h(n)=",h[n])
 #    println("u=",u)
 #    println("f=",f)
-    println("d=",d)
+#    println("d=",d)
 
     # Création d'un modèle, ce modèle fera l'interface avec le solveur CPLEX
     m = Model(CPLEX.Optimizer)
@@ -50,10 +49,10 @@ function PL_LSP(pathFileData, SC, affichage)
 
     # Fonction objectif
     if SC == 0
-        println("PB SANS heuristique")
+        #println("PB SANS heuristique")
         @objective(m, Min, sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t] for i = 1:n) for t = 1:l ) )
     else
-        println("PB AVEC heuristique")
+        #println("PB AVEC heuristique")
         @objective(m, Min, sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t]+SC[i,t]*z[i,t] for i = 1:n) for t = 1:l ) )
         #PB @constraint(m, ) # Contrainte couplantes entre les variables utiles à l'heuristique et les variables de production
     end
@@ -154,11 +153,13 @@ function PL_LSP(pathFileData, SC, affichage)
 end
 
 # Tests
-p, y, I, q = PL_LSP("PRP_instances/A_014_ABS1_15_1.prp", 0, false)
-println("p=", p)
-println("y=", y)
-println("I=", I)
-println("q=", q)
+# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+# data = Read_file(pathFileData)
+# p, y, I, q = PL_LSP(data, 0, false)
+# println("p=", p)
+# println("y=", y)
+# println("I=", I)
+# println("q=", q)
 
 #PB y pas binaire ?
 #PB on doit avoir d = q à la fin ?

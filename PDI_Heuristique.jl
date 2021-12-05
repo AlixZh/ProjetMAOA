@@ -1,16 +1,15 @@
 using JuMP
 using CPLEX
 
-function heuristique(pathFileData)
+function PDI_heuristique(data)
     """
     Paramètres : 
-    pathFileData le chemin du fichier de donnée
+    data le dictionnaire contenant les données de l'instance
     """
 
     nbIteMax = 100
 
     # Récupération des données
-    data = Read_file(pathFileData)
     n = data["n"] # n le nombre de revendeurs (en comptant le fournisseur)
     l = data["l"] # l horizon de planification
     f = data["f"] # f coût fixe par période de production
@@ -63,4 +62,7 @@ function heuristique(pathFileData)
 end
 
 # Test 
-heuristique("PRP_instances/A_014_ABS1_15_2.prp")
+# pathFileData = "PRP_instances/B_200_instance30.prp"
+# data = Read_file(pathFileData)
+
+# PDI_heuristique(data)
