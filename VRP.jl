@@ -96,17 +96,65 @@ function PL_VRP(pathFileData, demande, t, affichage)
 	return value.(x), value.(w) # On récupère les valeurs des variables de décision
 end
 
+function VRP_to_Circuit(pathFileData, x, affichage) 
+    """
+	Permet de représenter la solution renvoyé par le PL sous forme de liste de liste (représentant les circuits, dans l'ordre de passage)
+    Paramètres : 
+    pathFileData le chemin du fichier de donnée
+	x les valeurs des variables binaires xij qui vallent 1 si un véhicule utilise l’arc (i, j) 
+	affichage qui vaut true si on veut afficher le graphe
+    """
+
+	# Récupération des données
+    data = Read_file(pathFileData)
+	n = data["n"] # n le nombre de clients	
+
+	circuits = Vector{Int64}[]
+
+	for i in 1:n
+		# On sait que tout chemin commence par le sommet 0 (centre de dépôt)
+		if x[0,i] > 0
+			circuit = [0] # On traite le circuit qui commence par l'arc (0,i)
+			depart = i # On veut chercher l'arc dont l'extrémité de départ est i
+
+			while depart != 0 # Tant qu'on ne retourne pas en 0
+				# On ajoute le sommet que l'on vient de rencontrer si ce n'est pas 0 (on ne veut avoir 0 qu'au début de la liste)
+				push!(circuit, depart)
+
+				for j in 0:n
+					if j != depart
+						if x[depart, j] > 0 # On a trouvé l'arc dont l'extrémité de départ est depart, c'est (départ, j)
+							depart = j # C'est maintenant le départ du nouvel arc que l'on traite
+							break
+						end
+
+					end
+				end
+
+			end
+
+			push!(circuits, circuit)
+
+		end
+	end
+
+	if affichage
+		#PB afficher le graphe 
+	end
+
+	return circuits
+
+end
+
 # Tests
-# pathFileData = "PRP_instances/B_200_instance30.prp"
+pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
 
 # Récupérer le q dans LSP
-# p, y, I, q = PL_LSP(pathFileData, 0, false)
+p, y, I, q = PL_LSP(pathFileData, 0, false)
 
-# x, w = PL_VRP(pathFileData, q, 2, false) # Le q vient de LSP.jl
-# println("x=", x)
-# println("w=", w)
+x, w = PL_VRP(pathFileData, q, 2, false) # Le q vient de LSP.jl
+println("x=", x)
+println("w=", w)
 
-
-
-
-
+circuits = VRP_to_Circuit(pathFileData, x, false)
+println("Circuits =", circuits)
