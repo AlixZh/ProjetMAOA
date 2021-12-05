@@ -97,7 +97,12 @@ function PL_VRP(pathFileData, demande, t, affichage)
 end
 
 # Tests
-x, w = PL_VRP("PRP_instances/A_014_ABS1_15_1.prp", q, 2, false) # Le q vient de LSP.jl
+# pathFileData = "PRP_instances/B_200_instance30.prp"
+
+# Récupérer le q dans LSP
+# p, y, I, q = PL_LSP(pathFileData, 0, false)
+
+# x, w = PL_VRP(pathFileData, q, 2, false) # Le q vient de LSP.jl
 # println("x=", x)
 # println("w=", w)
 
