@@ -55,6 +55,7 @@ function PL_LSP(pathFileData, SC, affichage)
     else
         println("PB AVEC heuristique")
         @objective(m, Min, sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t]+SC[i,t]*z[i,t] for i = 1:n) for t = 1:l ) )
+        #PB @constraint(m, ) # Contrainte couplantes entre les variables utiles à l'heuristique et les variables de production
     end
    
    # Ajout des contraintes dans le modèle

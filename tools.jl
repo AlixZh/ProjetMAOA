@@ -60,7 +60,7 @@ function Read_file(filename)
 				L[x1+1] = parse(Float64,x[8])
 				L0[x1+1] = parse(Float64,x[10])
 				h[x1+1] = parse(Float64,x[6])
-				coord[x1+1] = (parse(Float64,x[2] ) ,parse(Float64,x[3]))   
+				coord[x1+1] = (parse(Float64,x[2]) ,parse(Float64,x[3]))   
 			end
 		end
 	end

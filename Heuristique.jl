@@ -7,6 +7,8 @@ function heuristique(pathFileData)
     pathFileData le chemin du fichier de donnée
     """
 
+    nbIteMax = 100
+
     # Récupération des données
     data = Read_file(pathFileData)
     n = data["n"] # n le nombre de revendeurs (en comptant le fournisseur)
@@ -29,25 +31,35 @@ function heuristique(pathFileData)
         end
     end
 
-    # Résolution du problème LSP avec prise en compte des coûts de visite
-    p, y, I, q = PL_LSP("PRP_instances/A_014_ABS1_15_2.prp", SC, false)
-    println("p=", p)
-    println("y=", y)
-    println("I=", I)
-    println("q=", q)
+    nbIte = 0
+    while nbIte <= nbIteMax
+        # Résolution du problème LSP avec prise en compte des coûts de visite
+        p, y, I, q = PL_LSP("PRP_instances/A_014_ABS1_15_2.prp", SC, false)
+        println("p=", p)
+        println("y=", y)
+        println("I=", I)
+        println("q=", q)
 
-    # Résolution, pour chaque pas de temps, du VRP
-    for t=1:l
-        if y[t] != 0 # Si une production est lancée à la période t, sinon ne rien faire à ce temps
-        # Résoudre VRP avec les paramètres : p[t] quantité produite à la période t, 
-        # y[t] vaut 1 si une production est lancée à la période t, et 0 sinon,
-        # I[:,t] la quantité en stock à la fin de la période t pour chaque revendeur i, et
-        # q[:,t] la quantité produite pour chaque revendeur i à la période t
+        # Résolution, pour chaque pas de temps, du VRP
+        for t=1:l
+            if y[t] != 0 # Si une production est lancée à la période t, sinon ne rien faire à ce temps
+            # Résoudre VRP avec les paramètres : p[t] quantité produite à la période t, 
+            # y[t] vaut 1 si une production est lancée à la période t, et 0 sinon,
+            # I[:,t] la quantité en stock à la fin de la période t pour chaque revendeur i, et
+            # q[:,t] la quantité produite pour chaque revendeur i à la période t
+            end
         end
+
+        # Mise à jour des coûts SC
+
+        if nbIte == 0
+            bestSol = # Mémorisation de la meilleure solution
+        elseif CoutbestSol < CoutSolcourante
+            bestSol = Solcourante # Mémorisation de la meilleure solution
+        end
+        nbIte += 1
     end
-
-    # Mise à jour des coûts SC
-
+    return bestSol
 end
 
 # Test 
