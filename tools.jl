@@ -107,10 +107,10 @@ function matrix_cout(data)
 	c=zeros(data["n"]+1,data["n"]+1)
 	for i in [1:data["n"]+1;] 
 		for j in [1:data["n"]+1;] 
-			if(data["type"]==1)
+			if(data["type"] == 1)
 				c[i,j] = coutA(data["coord"][i], data["coord"][j])
 			elseif(data["type"] == 2)
-				c[i,j] = coutB(data["coord"][i], data["coord"][j])
+				c[i,j] = coutB(data["coord"][i], data["coord"][j], data["mc"])
 			else 
 				println("Probleme de type dans le calcul des couts")
 				return c
