@@ -1,13 +1,13 @@
 using JuMP
 using CPLEX
 
-include("tools.jl")
+#include("tools.jl")
 
 function PL_LSP(data, SC, affichage)
     """
     Paramètres : 
     data le dictionnaire contenant les données de l'instance
-    SC sert pour l'heuristique et représente le coût de visite du client i à la période t (vaut 0 si on n'est pas dans le cas heuristique)
+    SC sert pour l'heuristique du PDI et représente le coût de visite du client i à la période t (vaut 0 si on n'est pas dans le cas heuristique du PDI)
     affichage qui vaut true si on veut afficher les solutions trouvées
     """
 
@@ -19,7 +19,7 @@ function PL_LSP(data, SC, affichage)
     d = data["d"] # d tableau de dimension n*l, d[i,t] exprime la demande du revendeur i au temps t
     h = data["h"] # h tableau de dimension n, h[i] exprime le coût de stockage unitaire du revendeur i
     L = data["L"] # L tableau de dimension n, L[i] exprime la capacité de stockage maximale chez le revendeur i
-    L0 = data["L0"] # L0 tableau de dimension n, L0[i] exprime la quantité en stock à la fin de la période 0 (càd au début) pour i PB c'est ca??
+    L0 = data["L0"] # L0 tableau de dimension n, L0[i] exprime la quantité en stock à la fin de la période 0 (càd au début) pour i 
     M = data["C"] # M constante big M qui se doit d'être supérieure à toute valeur raisonnable que peut prendre la quantité produite sur une période
 
     #PB +1 aux indices de h, L et L0 ?
@@ -44,7 +44,7 @@ function PL_LSP(data, SC, affichage)
     @variable(m, 0<=I[0:n, 0:l]) # I tableau de dimension (n+1)*(l+1), I[i,j] exprime la quantité en stock à la fin de la période j pour le revendeur i
     @variable(m, 0<=q[1:n, 1:l]) # q tableau de dimension n*l, q[i,j] exprime la quantité produite pour le revendeur i à la période j
     if SC != 0
-        @variable(m, z[1:n, 1:l], Bin) # PB ajouter des contraintes couplantes entre ces variables et les variables de production dans le modele
+        @variable(m, z[1:n, 1:l], Bin) 
     end
 
     # Fonction objectif
@@ -54,7 +54,18 @@ function PL_LSP(data, SC, affichage)
     else
         #println("PB AVEC heuristique")
         @objective(m, Min, sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t]+SC[i,t]*z[i,t] for i = 1:n) for t = 1:l ) )
-        #PB @constraint(m, ) # Contrainte couplantes entre les variables utiles à l'heuristique et les variables de production
+        
+        # Ajout des contraintes couplantes entre les variables utiles à l'heuristique PDI et les variables de production dans le modèle
+        for i in 1:n
+            for t in 1:l
+                @constraint(m, q[i,t]<=z[i,t]*M) # Contrainte big M qui exprime que z[i,t] vaut 1 si le client i est visité à la période t 
+                                                 # (càd que l'on a produit pour i à la période t) comme c'est en minimisation, 
+                                                 # z[i,t] vaudra 0 si q[i,t] vaut 0, on a donc bien ce que l'on voulait
+                
+                # Pour être sur que si on ne produit pas, z est nul, on peut ajouter la contrainte suivante :
+                # @constraint(m, z[i,t] <= q[i,t])
+            end
+        end
     end
    
    # Ajout des contraintes dans le modèle
@@ -86,7 +97,7 @@ function PL_LSP(data, SC, affichage)
         # print(m)
         # println()
 
-        # Résolution du problème d'optimisation linéaire m par le solveur GLPK
+        # Résolution du problème d'optimisation linéaire m par le solveur CPLEX
         println("Résolution par le solveur linéaire choisi")
         optimize!(m)
         println()
@@ -140,15 +151,6 @@ function PL_LSP(data, SC, affichage)
     else # Sans l'affichage, il faut qd même optimiser
         optimize!(m)
     end
-
-
-    # for i=1:n #PB test si d = q
-    #     for t= 1:l
-    #         println("PB d=q?",d[i,t]==value.(q)[i,t])
-    #     end
-    # end
-
-
     return value.(p), value.(y), value.(I), value.(q) # On récupère les valeurs des variables de décision
 end
 
@@ -162,5 +164,5 @@ end
 # println("q=", q)
 
 #PB y pas binaire ?
-#PB on doit avoir d = q à la fin ?
-#PB Iit (Variable de stockage): quantit´e en stock `a la fin de la p´eriode t pour i; pour t = 0 c'est différent de 0, normal ? C'est L0 ?
+
+# PB régler les import en haut des fichiers

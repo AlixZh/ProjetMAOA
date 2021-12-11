@@ -1,7 +1,8 @@
 using JuMP
 using CPLEX
 
-include("tools.jl")
+#include("tools.jl")
+
 # const OPTIMAL = JuMP.MathOptInterface.OPTIMAL
 # const INFEASIBLE = JuMP.MathOptInterface.INFEASIBLE
 # const UNBOUNDED = JuMP.MathOptInterface.DUAL_INFEASIBLE;
@@ -10,7 +11,7 @@ function PL_VRP(data, demande, t, affichage)
     """
     Paramètres : 
     data le dictionnaire contenant les données de l'instance
-	demande un tableau [1:n, 1:l] de taille n*l, demande[i,t] est la demande du client i au temps t, soit q[i,t] dans la notation LSP
+	demande un tableau [1:n, 1:l] de taille n*l, demande[i,t] est la quantité produite pour le revendeur i à la période t, soit q[i,t] dans la notation LSP
 	t l'instant de temps à considérer
 	affichage qui vaut true si on veut afficher les solutions trouvées
     """
@@ -22,7 +23,7 @@ function PL_VRP(data, demande, t, affichage)
 
 	cout = matrix_cout(data) # le cout de transport du client i (0:n) au j (0:n) (l'indice 1 est le centre de depot) 	
 
-	# Création d'un modèle. Ce modèle fera l'interface avec le solveur GLPK
+	# Création d'un modèle. Ce modèle fera l'interface avec le solveur CPLEX
 	m = Model(CPLEX.Optimizer)
 
 	# Création des variables
@@ -44,7 +45,7 @@ function PL_VRP(data, demande, t, affichage)
 		@constraint(m, sum(x[:,i])==1) # Contrainte (9)
 
 		for j in 1:n
-			@constraint(m, (demande[i,t]-(Q + demande[i,t])*(1 - x[i,j]))<= (w[i]-w[j])) # Contrainte (10)
+			@constraint(m, (demande[i,t]-(Q + demande[i,t])*(1 - x[i,j]))<= (w[i]-w[j])) # Contrainte (10) MTZ
 		end
 	end
 
@@ -61,7 +62,7 @@ function PL_VRP(data, demande, t, affichage)
 		print(m)
 		println()
 
-		#Résolution du problème d'optimisation linéaire m par le solveur GLPK
+		#Résolution du problème d'optimisation linéaire m par le solveur CPLEX
 		println("Résolution par le solveur linéaire choisi")
 		optimize!(m)
 		println()
@@ -95,13 +96,13 @@ function PL_VRP(data, demande, t, affichage)
 	return value.(x), value.(w) # On récupère les valeurs des variables de décision
 end
 
-function VRP_to_Circuit(data, x, affichage) 
+function VRP_to_Circuit(data, x) 
     """
 	Permet de représenter la solution renvoyé par le PL sous forme de liste de liste (représentant les circuits, dans l'ordre de passage)
     Paramètres : 
     data le dictionnaire contenant les données de l'instance
 	x les valeurs des variables binaires xij qui vallent 1 si un véhicule utilise l’arc (i, j) 
-	affichage qui vaut true si on veut afficher le graphe
+	filename le nom sous lequel on veut enregistrer le graphe (0 si on ne veut pas l'enregistrer) 
     """
 
 	# Récupération des données
@@ -136,26 +137,48 @@ function VRP_to_Circuit(data, x, affichage)
 		end
 	end
 
-	if affichage
-		#PB afficher le graphe 
-	end
+	# if filename != 0
+	# 	#PB  à tester
+	# 	# On enregistre le graphe dans le répertoire courant 
+	# 	WritePngGraph_Boites(data, q, t, circuits, filename)
+	# end
 
 	return circuits
 
 end
 
-# Tests
-pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
-data = Read_file(pathFileData)
+# # Tests
+# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+# data = Read_file(pathFileData)
 
-# Récupérer le q dans LSP
-p, y, I, q = PL_LSP(data, 0, false)
+# # Récupérer le q dans LSP
+# p, y, I, q = PL_LSP(data, 0, false)
 
-x, w = PL_VRP(data, q, 2, false) # Le q vient de LSP.jl
-println("x=", x)
-println("w=", w)
+# x, w = PL_VRP(data, q, 2, false) # Le q vient de LSP.jl
+# println("x=", x)
+# println("w=", w)
 
-circuits = VRP_to_Circuit(data, x, false)
-println("Circuits =", circuits)
+# circuits = VRP_to_Circuit(data, q, x)
+# println("Circuits =", circuits)
 
 # PB Voir VRP_Heuristique pour évaluer le coût des circuits
+
+# #PB tests
+# boites = [[0,1,2],[4,5,6],[3,7,8]]
+# temp_boites = boites
+# for ind_boite in 1:length(boites)
+# 	boites[ind_boite] = []
+# end
+# println("boites = ", boites)
+# println("temp_boites = ", temp_boites)
+
+
+
+# bo = [1,2,0,1,2,7,0,1,3]
+# # filter!(e->e!=0, bo)
+# insert!(bo, 1, 9)
+# println(bo)
+println(0%3)
+println(1%3)
+println(2%3)
+println(3%3)
