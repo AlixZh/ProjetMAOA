@@ -10,25 +10,15 @@ function PL_TSP(data, client_t, affichage)
     clients_t l'ensemble de client à traiter (on ne traite que les clients qui ont une demande pour ce pas de temps)
     affichage qui vaut true si on veut afficher les solutions trouvées
     """
-
+    # PB sur tous les fichiers : verifier que toutes les donnees sont utilisees + indices +1 (reste le fichier tools a check)
     # Récupération des données
-    # n = data["n"] # n le nombre de revendeurs (en comptant le fournisseur)
-    # l = data["l"] # l horizon de planification
-    # f = data["f"] # f coût fixe par période de production
-    # u = data["u"] # u coût unitaire
-    # d = data["d"] # d tableau de dimension n*l, d[i,t] exprime la demande du revendeur i au temps t
-    # h = data["h"] # h tableau de dimension n, h[i] exprime le coût de stockage unitaire du revendeur i
-    # L = data["L"] # L tableau de dimension n, L[i] exprime la capacité de stockage maximale chez le revendeur i
-    # L0 = data["L0"] # L0 tableau de dimension n, L0[i] exprime la quantité en stock à la fin de la période 0 (càd au début) pour i 
-    # M = data["C"] # M constante big M qui se doit d'être supérieure à toute valeur raisonnable que peut prendre la quantité produite sur une période
-
     cout = matrix_cout(data) # le cout de transport du client i (1:n+1) au j (1:n+1) (l'indice 1 est le centre de depot) 	
-	# PB cout indice +1
+	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
     N = length(client_t) # Nombre de client à traiter à ce pas de temps
 
     # Création d'un modèle, ce modèle fera l'interface avec le solveur CPLEX
-    m = Model(CPLEX.Optimizer)
+    m = Model(optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_EPINT" => 1e-15 )) # Pour que les variables binaires soient bien 0 ou 1
 
     # Création des variables
     @variable(m, x[1:N, 1:N], Bin)
@@ -104,31 +94,73 @@ function is_tsp_solved(m, x)
     m le modèle d TSP faisant l'interface avec le solveur CPLEX
     x l'ensemble de variables binaires indiquant si on prend l'arête ou non
     """
-    N = size(x)[1]
+    N = size(x)[1] # Va de 1 à N
     x_val = JuMP.value.(x)
-    
+
     # find cycle
     cycle_idx = Int[]
     push!(cycle_idx, 1)
     while true
-        v, idx = findmax(x_val[cycle_idx[end],1:N])
+        v, idx = findmax(x_val[cycle_idx[end],:])
         if idx == cycle_idx[1]
             break
         else
-            push!(cycle_idx,idx)
+            push!(cycle_idx, idx)
         end
     end
     println("cycle_idx: ", cycle_idx)
-    println("Length: ", length(cycle_idx))
+    println("Length: ", length(cycle_idx), " et N=", N)
     if length(cycle_idx) < N
-        @constraint(m, sum(x[cycle_idx,cycle_idx]) <= length(cycle_idx)-1)
+        println("PB Ajout d'une contrainte")
+        println("PB : ", sum(x[cycle_idx[i],cycle_idx[i+1]] for i in 1:length(cycle_idx)-1) + x[cycle_idx[length(cycle_idx)],cycle_idx[1]] ,"<=", length(cycle_idx)-1)
+        @constraint(m, sum(x[cycle_idx[i],cycle_idx[i+1]] for i in 1:length(cycle_idx)-1) + x[cycle_idx[length(cycle_idx)],cycle_idx[1]] <= length(cycle_idx)-1)
         return false
     end
     return true
 end
 
-# Tests
+function TSP_to_Circuit(data, client_t, x) 
+    """
+	Permet de représenter la solution renvoyé par le PL sous forme de liste de liste (représentant les circuits, dans l'ordre de passage)
+    Paramètres : 
+    data le dictionnaire contenant les données de l'instance
+    client_t le tableau de l'ensemble des noeuds (entiers) à traiter
+	x les valeurs des variables binaires xij qui vallent 1 si un véhicule utilise l’arc (i, j) 
+    """
+	circuit = [0]
+
+	for i in 1:length(client_t)
+		# On sait que tout chemin commence par le sommet 0 (centre de dépôt)
+		if x[1, i] > 0
+			# On traite le circuit qui commence par l'arc (0,i)
+			depart = i # On veut chercher l'arc dont l'extrémité de départ est i
+
+			while depart != 1 # Tant qu'on ne retourne pas en 0
+				# On ajoute le sommet que l'on vient de rencontrer si ce n'est pas 0 (on ne veut avoir 0 qu'au début de la liste)
+				push!(circuit, client_t[depart])
+
+				for j in 1:length(client_t)
+					if j != depart
+						if x[depart, j] > 0 # On a trouvé l'arc dont l'extrémité de départ est depart, c'est (départ, j)
+							depart = j # C'est maintenant le départ du nouvel arc que l'on traite
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return circuit
+end
+
+# ----- Tests -----
+
 pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
 data = Read_file(pathFileData)
-x = PL_TSP(data, [0,1,2], false)
-println("x=", x)
+client_t = [0,1,2,3,4,5,6,7,8]
+x = PL_TSP(data, client_t, false)
+println("x = ", x)
+
+circuits = TSP_to_Circuit(data, client_t, x)
+println("circuits = ", circuits)

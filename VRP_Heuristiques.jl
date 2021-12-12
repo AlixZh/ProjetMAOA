@@ -26,7 +26,6 @@ function Bin_Packing(data, demande, t)
 	somme = 0 # Poids cumulé dans la boite courante
 	boites = Vector{Int64}[] # Ensemble des boites
 
-	#boiteCourante = Vector{Int64}() #PB
 	boiteCourante = [0] # Toutes les boites doivent contenir le centre de dépot 0
 
 	for i in 1:n 
@@ -34,22 +33,18 @@ function Bin_Packing(data, demande, t)
 			somme += demande[i,t]
 
 			if somme > Q
-				#push!(boiteCourante, 0) PB pq ?
 				# On enregistre la boite avant d'ajouter l'objet qui fait déborder la capacité
 				push!(boites, boiteCourante)
 
 				# On met l'objet qui a fait déborder la boite précédente dans la nouvelle boite 
 				# On met donc la somme courante (du poids dans la boite courante) à jour
 				somme = demande[i,t]
-				#boiteCourante = Vector{Int64}() PB
 				boiteCourante = [0]
 			end
 			push!(boiteCourante, i)
 		end
 	end
 
-	# pas besoin ???? PB
-	#push!(boiteCourante, 0)
 	if length(boiteCourante) > 1
 		push!(boites, boiteCourante)
 	end
@@ -74,9 +69,8 @@ function Clark_Wright(data, demande, t)
 	# Récupération des données
     Q = data["Q"] # Q la capacité maximale de chaque véhicule
 	n = data["n"] # n le nombre de clients donc le nombre de noeuds du graphe (sans compter le dépot) ici
-
 	cout = matrix_cout(data) # le cout de transport du client i (1:n+1) au j (1:n+1) (l'indice 1 est le centre de depot) 	
-	# PB cout indice +1
+	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
 	# On créer l'ensemble de client à traiter
 	clients_t = []
@@ -112,7 +106,7 @@ function Clark_Wright(data, demande, t)
 		i = s[k][1][1]
 		j = s[k][1][2]
 		boite_i = []
-		boite_j = [] # PB NaN
+		boite_j = [] 
 		indice_boite_i = -1
 		indice_boite_j = -1
 
@@ -181,7 +175,8 @@ function Sectorielle(data, demande, t)
 	# Récupération des données
     Q = data["Q"] # Q la capacité maximale de chaque véhicule
 	n = data["n"] # n le nombre de clients
-	coord = data["coord"] # coord les coordonnees des positions des clients et du centre de depot (commence à 1) # PB indice +1
+	coord = data["coord"] # coord les coordonnees des positions des clients et du centre de depot (commence à 1) 
+	# Pour rappel, tous les indices de coord doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
 	centre = [coord[1][1], coord[1][2]]
 	repere = [1, 0]
@@ -197,7 +192,7 @@ function Sectorielle(data, demande, t)
 	clients_angle = []
 	for i in clients_t # On parcourt tous les noeuds à traiter à ce pas de temps
 		# On centre les coordonnées, càd on màj les coordonnées en prennant en compte que le point (0,0) est le centre de dépôt
-		point_centre = [coord[i][1], coord[i][2]] - centre 
+		point_centre = [coord[i+1][1], coord[i+1][2]] - centre 
 		
 		# Calcul du degré entre le vecteur directionnel [1, 0] et le vecteur centre vers le point (modulo 360 degrés)
 		degre = mod(rad2deg(atan(repere...) - atan(point_centre...)), 360)
@@ -272,7 +267,7 @@ function Cout_heur_Boite(data, boite)
 				
 	# Récupération des données
     cout = matrix_cout(data) # le cout de transport du client i (1:n+1) au j (1:n+1) (l'indice 1 est le centre de depot) 	
-	# PB cout indice +1
+	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
 	cout_total = 0
 
@@ -298,7 +293,7 @@ function Cout_heur_Boite(data, boite)
 	return cout_total/2
 end
 
-function MinCout_Ajout(cout, boite, i) # PB a tester et a introduire dans iteratif
+function MinCout_Ajout(cout, boite, i) 
 	"""
 	Retourne la valeur du coût minimum de la boîte dans laquelle on a insérer i (et l'indice auquel il faut l'insérer pour atteindre ce coût)
     Paramètres : 
@@ -324,7 +319,7 @@ function MinCout_Ajout(cout, boite, i) # PB a tester et a introduire dans iterat
 		end
 	end
 
-	return cout_min, indice_min # PB se servir de indice_min
+	return cout_min, indice_min 
 end
 
 function Cout_Circuit(cout, circuit)
@@ -359,7 +354,7 @@ function Cout_Circuits(data, circuits)
 
 	# Récupération des données
     cout = matrix_cout(data) # le cout de transport du client i (1:n+1) au j (1:n+1) (l'indice 1 est le centre de depot) 	
-	# PB cout indice +1
+	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
 	cout_total = 0
 
@@ -384,9 +379,10 @@ function VRP_iteratif(data, demande, t, heuristique)
 	# Récupération des données
     k = data["k"] # k le nombre de véhicules
 	n = data["n"] # n le nombre de clients
+    Q = data["Q"] # Q la capacité maximale de chaque véhicule
 
 	cout = matrix_cout(data) # le cout de transport du client i (1:n+1) au j (1:n+1) (l'indice 1 est le centre de depot) 	
-	# PB cout indice +1
+	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
 	# On créer l'ensemble de client à traiter
 	clients_t = []
@@ -425,82 +421,236 @@ function VRP_iteratif(data, demande, t, heuristique)
 	# 		end
 	# 	end
 	end 
-	println("PB boites = ", pb)
+	#println("PB boites = ", pb)
 	# PB tests ------------------------------------- 
 
-	# PB TSP 2fois lancé
-	# PB On résout le problème du voyageur de commerce (TSP) limité aux sommets de chaque boîte par PLNE
+	# PB modifier dans overleaf que on fait LSP à ce moment là et pas 2fois ou quoi
+
+	# Il faut ensuite faire le TSP pour résoudre le VRP heuristiquement (les heuristiques ci-dessus partitionnent juste les clients)
+	# Cela permet, grâce à la résolution du problème de voyageur de commerce (TSP), de passer de la partition des clients aux tournées
+	# On veut optimiser chacune des tournées (càd remettre dans un ordre 'optimal' chacune des boites)
+
+	# PB marche pas :
+	# On résout le problème du voyageur de commerce (TSP) limité aux sommets de chaque boîte par PLNE
 	# new_boites = []
 	# for boite in boites
+	# 	println("-----------------------------------------------------------------")
+	# 	println("PB boite avant TSP = ", boite)
 	# 	x = PL_TSP(data, boite, false)
-	# 	new_boite = VRP_to_Circuit(data, x)
+	# 	new_boite = TSP_to_Circuit(data, boite, x)
 	# 	push!(new_boites, new_boite) 
+	# 	println("PB boite après TSP = ", new_boite)
+	# 	println("-----------------------------------------------------------------")
 	# end
 	# boites = new_boites 
 
 	# PB(par une heuristique gloutonne au plus proche sommet en démarrant du dépôt)
-	new_boites = []
+	function TSP_heur(boites)
+		new_boites = []
+		for boite in boites
+			new_boite = [0]
+			filter!(e->e!=0, boite)
+			while length(boite) > 1
+				# On cherche le sommet le plus proche du dernier élément parmi ceux qu'il reste
+				CoutMin = cout[new_boite[end]+1, boite[1]+1]
+				elemMin = boite[1]
+				for elem in boite
+					if CoutMin > cout[new_boite[end]+1, elem+1]
+						CoutMin = cout[new_boite[end]+1, elem+1]
+						elemMin = elem
+					end
+				end
+				push!(new_boite, elemMin)
+				filter!(e->e!=elemMin, boite)
+			end
+			if length(boite) == 1
+				push!(new_boite, boite[1]) # On ajoute le dernier élément
+			end
+			push!(new_boites, new_boite)
+		end
+		return new_boites
+	end
+
+	boites = TSP_heur(boites)
+
+	# PB tests -------------------------------------
+	pb = false
 	for boite in boites
-		new_boite = [0]
-		filter!(e->e!=0, boite)
-		while length(boite) > 1
-			# On cherche le sommet le plus proche du dernier élément parmi ceux qu'il reste
-			CoutMin = cout[new_boite[end]+1, boite[1]+1]
-			elemMin = boite[1]
-			for elem in boite
-				if CoutMin > cout[new_boite[end]+1, elem+1]
-					CoutMin = cout[new_boite[end]+1, elem+1]
-					elemMin = elem
+		if boite[1] != 0
+			pb = true
+		end
+	# 	dict = histogram(boite)
+	# 	for k in keys(dict)
+	# 		if dict[k]>1
+	# 			println("PB boite il y a ", dict[k], " numéros ", k)
+	# 			pb = true
+	# 		end
+	# 	end
+	end 
+	#println("PB boites apres TSP glouton = ", pb)
+	# PB tests -------------------------------------
+
+	# println("PB Coût après TSP : ", Cout_Circuits(data, boites)) 
+
+
+	println("PB AVANT BOITE, cout = ", Cout_Circuits(data, boites))
+	# println("PB BOITES = ", boites)
+	# if length(boites) < k # PB a decommenter
+	# 	# On ajoute des tournées vides pour permettre des transition vers ces nouvelles tournées
+	# 	len = length(boites)
+	# 	for i in 1:k-len
+	# 		push!(boites, [0])
+	# 	end
+	# end
+
+	if length(boites) < k #PB ajouter dans le overleaf cette initialisation
+		# On sépare les tournées jusqu'à utiliser tous les véhicules
+		len = length(boites)
+		for i in 1:k-len # On ajoute k-len boîtes pour atteindre k boîtes
+			# On choisit la boîte comportant le plus d'éléments
+			ind_grande_boite = 1
+			for ind_boite in 2:length(boites)
+				if length(boites[ind_boite]) > length(boites[ind_grande_boite])
+					ind_grande_boite = ind_boite
 				end
 			end
-			push!(new_boite, elemMin)
-			filter!(e->e!=elemMin, boite)
+
+			# On sépare la boîte en deux : notons que la capacité ne dépasse forcément pas celle du camion puisque ça ne dépassait pas 
+			# pour la boîte entière et que l'heuristique TSP dans laquelle on prend le sommet le moinsloin à chaque fois est vérifiée 
+			# pour ces sous ensembles, nous n'avons donc pas besoin de le refaire
+			boite_actu = boites[ind_grande_boite]
+			tab1 = boite_actu[1:floor(Int,length(boite_actu)/2)] # Commence bien par le dépôt 0
+			tab2 = boite_actu[floor(Int,length(boite_actu)/2)+1:length(boite_actu)]
+			boites[ind_grande_boite] = tab1
+			# Il faut que tab2 commence par le centre de dépôt
+			insert!(tab2, 1, 0)
+			push!(boites, tab2)
 		end
-		if length(boite) == 1
-			push!(new_boite, boite[1]) # On ajoute le dernier élément
-		end
-		push!(new_boites, new_boite)
 	end
-	boites = new_boites
 
-	# PB tests -------------------------------------
-	pb = false
-	for boite in boites
-		if boite[1] != 0
-			pb = true
-		end
-	# 	dict = histogram(boite)
-	# 	for k in keys(dict)
-	# 		if dict[k]>1
-	# 			println("PB boite il y a ", dict[k], " numéros ", k)
-	# 			pb = true
-	# 		end
-	# 	end
-	end 
-	println("PB boites apres TSP glouton = ", pb)
-	# PB tests -------------------------------------
+	#println("PB BOITES APRES Ajout boites vides = ", boites)
+	#println("PB Coût après ajout de boites : ", Cout_Circuits(data, boites))
 
-	#println("PB Coût après TSP : ", Cout_Circuits(data, boites)) 
-
-
-	# println("PB AVANT BOITE, cout = ", Cout_Circuits(data, boites))
-	# println("PB BOITES = ", boites)
-	if length(boites) < k 
-		# On ajoute des tournées vides pour permettre des transition vers ces nouvelles tournées
+	if length(boites) > k # PB ajouter dans le overleaf cette initialisation
+		# On réunit les tournées jusqu'à n'utiliser pas plus de k véhicules
 		len = length(boites)
-		for i in 1:k-len
-			push!(boites, [0])
+		for i in 1:len-k # On enlève len-k boîtes pour atteindre k boîtes
+			changementNonEffectue = true
+			nbIteEchec = 0
+			while changementNonEffectue
+				if nbIteEchec == 0
+					# On choisit les deux boîtes comportant le moins d'éléments
+					ind_petite_boite = 1
+					ind_petite_boite2 = 1
+					for ind_boite in 2:length(boites)
+						if length(boites[ind_boite]) < length(boites[ind_petite_boite])
+							if length(boites[ind_petite_boite2]) > length(boites[ind_petite_boite])
+								ind_petite_boite2 = ind_petite_boite
+							end
+							ind_petite_boite = ind_boite
+						end
+
+						if length(boites[ind_boite]) > length(boites[ind_petite_boite]) && length(boites[ind_boite]) < length(boites[ind_petite_boite2])
+							ind_petite_boite2 = ind_boite
+						end
+					end
+
+					# Si la demande des deux boîtes n'excède pas la capacité du camion, c'est bon
+					# Il faut également que la capacité du camion (Q) ne soit pas dépassée dans la nouvelle boîte
+					nouvelle_demande = 0
+					for elemq in boites[ind_petite_boite]
+						if elemq != 0
+							nouvelle_demande += demande[elemq, t]
+						end
+					end
+
+					for elemq in boites[ind_petite_boite2]
+						if elemq != 0
+							nouvelle_demande += demande[elemq, t]
+						end
+					end
+				
+					if nouvelle_demande <= Q && ind_petite_boite != ind_petite_boite2
+						# On fait TSP sur la nouvelle boîte réunissant les 2 boîtes précédentes
+						boite2 = boites[ind_petite_boite2]
+						nouv_boite = [boites[ind_petite_boite] ; boite2[2:length(boite2)]] # On ne prend pas deux fois le dépôt
+
+						nouv_boite_tsp = TSP_heur([nouv_boite])[1]
+						boites[ind_petite_boite] =  nouv_boite_tsp
+
+						# On retire la seconde boîte
+						deleteat!(boites, ind_petite_boite2)
+						changementNonEffectue = false
+					end
+					nbIteEchec += 1 # Ne restera à 1 que si on reboucle
+				else
+					for ind_petite_boite in 1:length(boites)-1
+						if changementNonEffectue == false
+							break
+						end
+						for ind_petite_boite2 in ind_petite_boite+1:length(boites)
+							if changementNonEffectue == false
+								break
+							end
+							# Si la demande des deux boîtes n'excède pas la capacité du camion, c'est bon
+							# Il faut également que la capacité du camion (Q) ne soit pas dépassée dans la nouvelle boîte
+							nouvelle_demande = 0
+							for elemq in boites[ind_petite_boite]
+								if elemq != 0
+									nouvelle_demande += demande[elemq, t]
+								end
+							end
+
+							for elemq in boites[ind_petite_boite2]
+								if elemq != 0
+									nouvelle_demande += demande[elemq, t]
+								end
+							end
+						
+							if nouvelle_demande <= Q
+								# On fait TSP sur la nouvelle boîte réunissant les 2 boîtes précédentes
+								boite2 = boites[ind_petite_boite2]
+								nouv_boite = [boites[ind_petite_boite] ; boite2[2:length(boite2)]] # On ne prend pas deux fois le dépôt
+
+								nouv_boite_tsp = TSP_heur([nouv_boite])[1]
+								boites[ind_petite_boite] =  nouv_boite_tsp
+
+								# On retire la seconde boîte
+								deleteat!(boites, ind_petite_boite2)
+								changementNonEffectue = false
+							end
+
+							if ind_petite_boite == length(boites)-1 && ind_petite_boite2 == length(boites) && changementNonEffectue
+								# Dans ce cas aucun changement ne peut être effectué avec un tel voisinnage sans dépasser la taille du camion
+								# Dans ce cas on regarde déjà si le problème est réalisable
+								if sum(demande[i,t] for i in 1:n) > Q*k # Normalement impossible grâce au LSP
+									println("!! Attention problème NON REALISABLE !!")
+									println("PB t = ", t)
+									return 0
+								end
+
+								# Et si il est bien réalisable, on utilise le PL du VRP
+								x, w = PL_VRP(data, demande, t, false)
+								return VRP_to_Circuit(data, demande, x) # On retourne directement puisque le PL résout exactement le problème
+
+								# Autres possibilités :
+								# Si le nombre de tournées de la solution initiale est supérieur à k, il est possible d’utiliser
+								# dans un premier temps une fonction objective artificielle pour forcer à réduire le nombre de tournées.
+
+								# Ou on prend les boîtes (en nombre nécessaire pour atteindre k boîtes) de demande la plus faible
+								# Puis on répartit dans les autres boîtes jusqu'à dépasser le poids (problème du sac à dos) 
+								# mais il n'est pas forcé que l'on trouve une solution réalisable non plus
+							end
+						end
+					end
+				end
+			end
 		end
-	end
 
-	# println("PB BOITES APRES Ajout boites vides = ", boites)
-	# println("PB Coût après ajout de boites vides : ", Cout_Circuits(data, boites))
-
-	if length(boites) > k
-		# PB
-		
+		# PB		
 		# Si le nombre de tourn´ees de la solution initiale est sup´erieur `a m, il est possible d’utiliser
 		# dans un premier temps une fonction objective artificielle pour forcer `a r´eduire le nombre de tourn´ees.
+
 		
 	end
 
@@ -518,7 +668,7 @@ function VRP_iteratif(data, demande, t, heuristique)
 	# 		end
 	# 	end
 	end 
-	println("PB boites après ajout circuits vides= ", pb)
+	#println("PB boites après ajout circuits vides= ", pb)
 	# PB tests -------------------------------------
 
 	# A partir d'ici, le nombre de tournées est exactement égal à k 
@@ -564,15 +714,27 @@ function VRP_iteratif(data, demande, t, heuristique)
 					min_cout, min_indice = MinCout_Ajout(cout, boites[indice_boite], client)
 					ancien_cout = cout_boite_client + Cout_Circuit(cout, boites[indice_boite])
 					nouveau_cout = cout_boite_client_sans + min_cout
-					
+
 					# Si (le coût de la boîte avec le client + le coût de la boîte d'indice indice_boite 
 					# - le coût de l'ancienne boîte du client sans le client - le coût de la boîte d'indice indice_boite avec le client en plus), 
-					# càd ce que l'on gagne en changeant le client de boite est plus grand que ce que l'on a trouvé jusqu'alors, on màj la meilleure boite trouvée
-					if ancien_cout - nouveau_cout > cout_meilleur_changement
-						cout_meilleur_changement = ancien_cout - nouveau_cout
-						indice_meilleure_boite = indice_boite # On garde la boîte qui améliore le plus la solution
-						min_indice_meilleur = min_indice # L'indice où il faut insérer client dans boites[indice_meilleure_boite] pour avoir le coût le plus faible
-						changement = true 
+					# càd ce que l'on gagne en changeant le client de boite est plus grand que ce que l'on a trouvé jusqu'alors
+					# et que la capacité du camion est toujours repectée, on màj la meilleure boite trouvée
+					if ancien_cout - nouveau_cout > cout_meilleur_changement 
+						# Il faut également que la capacité du camion (Q) ne soit pas dépassée dans la nouvelle boîte
+						nouvelle_demande = 0
+						for elemq in boites[indice_boite]
+							if elemq != 0
+								nouvelle_demande += demande[elemq, t]
+							end
+						end
+						nouvelle_demande += demande[client, t]
+					
+						if nouvelle_demande <= Q
+							cout_meilleur_changement = ancien_cout - nouveau_cout
+							indice_meilleure_boite = indice_boite # On garde la boîte qui améliore le plus la solution
+							min_indice_meilleur = min_indice # L'indice où il faut insérer client dans boites[indice_meilleure_boite] pour avoir le coût le plus faible
+							changement = true 
+						end
 					end
 
 					# # PB avec heuristique :
@@ -618,8 +780,10 @@ function VRP_iteratif(data, demande, t, heuristique)
 		end
 		#println("PB Boites =", boites)
         nbIte += 1
-		#println("PB Coût après mouvement d'un client : ", Cout_Circuits(data, boites), "chgmt = ", changement, "heur = ", sum(Cout_heur_Boite(data, boite) for boite in boites))
-    end
+		# if changement
+		# 	println("PB Coût après mouvement d'un client : ", Cout_Circuits(data, boites)) # PB, "chgmt = ", changement, "heur = ", sum(Cout_heur_Boite(data, boite) for boite in boites))
+    	# end
+	end
 
 	# PB tests -------------------------------------
 	pb = false
@@ -635,56 +799,11 @@ function VRP_iteratif(data, demande, t, heuristique)
 	# 		end
 	# 	end
 	end 
-	println("PB boites après mouvement client  = ", pb)
+	#println("PB boites après mouvement client  = ", pb)
 	# PB tests -------------------------------------
 
-	#PB Une m´etaheuristique it´erative peut alors ˆetre utilis´ee sur la base de plusieurs voisinages:
-	# - supprimer une tourn´ee vide
-
-	# PB il faut ensuite faire le TSP pour résoudre VRP heuristiquement 
-	# (les heuristiques ci-dessus partitionnent juste les clients)
-	# Permet, grâce à la résolution du problème de voyageur de commerce (TSP), de passer de la partition des clients aux tournées
-	# On veut optimiser chacune des tournées (càd remettre dans un ordre 'optimal' chacune des boites)
 
 
-	
-	# PB On résout le problème du voyageur de commerce (TSP) limité aux sommets de chaque boîte par PLNE
-	# new_boites = []
-	# for boite in boites
-	# 	x = PL_TSP(data, boite, false)
-	# 	new_boite = VRP_to_Circuit(data, x)
-	# 	push!(new_boites, new_boite) 
-	# end
-	# boites = new_boites 
-
-	# PB(par une heuristique gloutonne au plus proche sommet en démarrant du dépôt) #PB NON AUGMENT LE COUT !
-	# new_boites = []
-	# for boite in boites
-	# 	new_boite = [0]
-	# 	filter!(e->e!=0, boite)
-	# 	while length(boite) > 1
-	# 		# On cherche le sommet le plus proche du dernier élément parmi ceux qu'il reste
-	# 		CoutMin = cout[new_boite[end]+1, boite[1]+1]
-	# 		elemMin = boite[1]
-	# 		for elem in boite
-	# 			if CoutMin > cout[new_boite[end]+1, elem+1]
-	# 				CoutMin = cout[new_boite[end]+1, elem+1]
-	# 				elemMin = elem
-	# 			end
-	# 		end
-	# 		push!(new_boite, elemMin)
-	# 		filter!(e->e!=elemMin, boite)
-	# 	end
-	# 	if length(boite) == 1
-	# 		push!(new_boite, boite[1]) # On ajoute le dernier élément
-	# 	end
-	# 	push!(new_boites, new_boite)
-	# end
-	# boites = new_boites
-
-	# println("PB Coût après TSP : ", Cout_Circuits(data, boites))
-
-	#println("PB len(boites)=",length(boites))
 	
 	# PB tests -------------------------------------
 	pb = false
@@ -700,7 +819,7 @@ function VRP_iteratif(data, demande, t, heuristique)
 	# 		end
 	# 	end
 	end 
-	println("PB boites avant mouvement TSP 2-opt = ", pb)
+	#println("PB boites avant mouvement TSP 2-opt = ", pb)
 	# PB tests -------------------------------------
 
 	nbIteMaxTSP2opt = 5 # On peut borner le nombre d'itérations à n au carré (ou puissance 4 (n carré arêtes dans un graphe complet) comme introduction de nouvelles arrêtes à chaque itération) où n est le nombre de sommets dans le graphe
@@ -802,7 +921,9 @@ function VRP_iteratif(data, demande, t, heuristique)
 					end
 				end
 			end
-			#println("PB Coût après TSP 2-opt d'une boite : ", Cout_Circuits(data, boites), " modif = ", changement[ind_boite])
+			# if changement[ind_boite]
+			# 	println("PB Coût après TSP 2-opt d'une boite : ", Cout_Circuits(data, boites)) #PB, " modif = ", changement[ind_boite])
+			# end
 		end
 		nbIte += 1
     end
@@ -821,7 +942,7 @@ function VRP_iteratif(data, demande, t, heuristique)
 	# 		end
 	# 	end
 	end 
-	println("PB boites après mouvement TSP 2-opt = ", pb)
+	#println("PB boites après mouvement TSP 2-opt = ", pb)
 	# PB tests -------------------------------------
 
 	# On retire les circuits vides
@@ -830,9 +951,13 @@ function VRP_iteratif(data, demande, t, heuristique)
 	return boites
 end
 
-# Tests
+# ----- Tests -----
+
 pathFileData = "PRP_instances/B_200_instance30.prp"
-# pathFileData = "PRP_instances/A_014_ABS2_15_1.prp"
+#pathFileData = "PRP_instances/B_100_instance20.prp"
+#pathFileData = "PRP_instances/A_100_ABS92_100_5.prp"
+#pathFileData = "PRP_instances/A_014_ABS2_15_1.prp"
+
 data = Read_file(pathFileData)
 t = 2
 
@@ -846,16 +971,16 @@ p, y, I, q = PL_LSP(data, 0, false)
 # println("Nombre de tournées = ", length(boites_BP)) 
 
 # Heuristique Clark-Wright
-boites_CW = Clark_Wright(data, q, t) # Le q vient de LSP.jl
-println("Résultat avec Clark Wright :")
-println(boites_CW)
-println("Nombre de tournées = ", length(boites_CW)) 
+# boites_CW = Clark_Wright(data, q, t) # Le q vient de LSP.jl
+# println("Résultat avec Clark Wright :")
+# println(boites_CW)
+# println("Nombre de tournées = ", length(boites_CW)) 
 
 # Heuristique sectorielle 
-# boites_Sec = Sectorielle(data, q, t) # Le q vient de LSP.jl
-# println("Résultat avec l'heuristique sectorielle :")
-# println(boites_Sec)
-# println("Nombre de tournées = ", length(boites_Sec)) 
+boites_Sec = Sectorielle(data, q, t) # Le q vient de LSP.jl
+println("Résultat avec l'heuristique sectorielle :")
+println(boites_Sec)
+println("Nombre de tournées = ", length(boites_Sec)) 
 
 # VRP heuristique
 # boites = Boites_heuristique(data, q, t,"BP")
@@ -864,27 +989,29 @@ println("Nombre de tournées = ", length(boites_CW))
 # boites = Boites_heuristique(data, q, t,"CW")
 # println(boites==boites_CW)
 
-# boites = Boites_heuristique(data, q, t,"Sec") 
-# println(boites==boites_Sec)
+boites = Boites_heuristique(data, q, t,"Sec") 
+println(boites==boites_Sec)
 
 # Le coût des circuits obtenus avec l'heuristique CW
-println("Coût des circuits : ", Cout_Circuits(data, boites_CW))
+# println("Coût des circuits : ", Cout_Circuits(data, boites_CW))
 
 #PB il faut ensuite faire méthode itérative
 boites = VRP_iteratif(data, q, t, "CW") # PB pour nbIteMaxTSP2opt = 10 (9 ok) et pathFileData = "PRP_instances/B_200_instance30.prp"
 println("Coût des circuits : ", Cout_Circuits(data, boites))
 
 # PB traiter le fait qu'on ne prends en compte que les revendeurs à livrer au temps t (dont le q[i,t] != 0), le centraliser
-# PB vérifier tous les indices +1
 # PB calculer la matrice de cout une fois pour toute (voir Cout_Circuits par exemple, matrix_cout)
 # PB utiliser filter!(e->e!="s", liste) plutot que de recopier toute la liste
 # PB idem avec insert!(circuit, indice, eleme)  et  insert!(L, indice, elem)
-# PB a chaque récupération de données vérifier qu'on utilise tout (pas grave sinon)
 # PB tester et comparer avec les résultats du prof envoyés par mail
 # PB bien commenter
 # PB dans l'itératif, s'assurer que ça ne dépasse pas la taille du camion Q
+# PB permettre d'utiliser tous les camions de façon plus maligne
+# PB s'assurer que les circuits commencent à 0 et n'ai aucun doublon
 
 # PB :
 # 39218 si on met TSP avant l'ajout des [0], peut-être vaut-il mieux le mettre en haut et considérer les changements avec les vrais couts
-# 33091 si on met TSP avant la phae TSP 2-opt
+# 33091 si on met TSP avant la phase TSP 2-opt
 # 26538 pour avant et après
+# 21329 ou 24831 avec les capacités respéctées et sans heuristique au début *
+# 30157 avec la nouvelle initialisation ou on coupe les boites en 2 plutot que d'ajouter des boites vides 

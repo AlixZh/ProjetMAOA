@@ -14,20 +14,16 @@ function PDI_heuristique(data, heuristique, filename)
 	filename le nom sous lequel on veut enregistrer les graphes (0 si on ne veut pas les enregistrer) 
     """
 
-    nbIteMax = 100
+    nbIteMax = 3 #PB a adapter
 
-    # Récupération des données #PB enlever données en trop
+    # Récupération des données 
     n = data["n"] # n le nombre de revendeurs (en comptant le fournisseur)
     l = data["l"] # l horizon de planification
     f = data["f"] # f coût fixe par période de production
     u = data["u"] # u coût unitaire
-    #d = data["d"] # d tableau de dimension n*l, d[i,t] exprime la demande du revendeur i au temps t
     h = data["h"] # h tableau de dimension n, h[i] exprime le coût de stockage unitaire du revendeur i
-    #L = data["L"] # L tableau de dimension n, L[i] exprime la capacité de stockage maximale chez le revendeur i
-    #M = data["C"] # M constante big M qui se doit d'être supérieure à toute valeur raisonnable que peut prendre la quantité produite sur une période
     c = matrix_cout(data) # c tableau de dimension n*n, c[i][j] exprime le coût de transport du nœud i au nœud j
-    
-    # PB +1 aux indices de c + ceux de LSP (h, L et L0)
+    # Pour rappel, tous les indices de c et h doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
     # Initialisation des paramètres SC : 
     SC = Array{Float64}(undef,n,l)
@@ -40,7 +36,7 @@ function PDI_heuristique(data, heuristique, filename)
     bestSol = []
     CoutbestSol = 0
     nbIte = 0
-    while nbIte <= nbIteMax
+    while nbIte < nbIteMax
         # Résolution du problème LSP avec prise en compte des coûts de visite
         p, y, I, q = PL_LSP(data, SC, false)
         # println("p=", p)
@@ -50,6 +46,7 @@ function PDI_heuristique(data, heuristique, filename)
 
         # Coûts engendrés par le LSP (stockage + production)
         CoutSolcourante = sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t] for i = 1:n) for t = 1:l )
+        #println("PB CoutSolcourante du LSP = ", CoutSolcourante)
 
         tournees = []
         # Résolution, pour chaque pas de temps, du VRP
@@ -59,15 +56,22 @@ function PDI_heuristique(data, heuristique, filename)
                 # y[t] vaut 1 si une production est lancée à la période t, et 0 sinon,
                 # I[:,t] la quantité en stock à la fin de la période t pour chaque revendeur i, et
                 # q[:,t] la quantité produite pour chaque revendeur i à la période t
+                # Avec VRP, on livre à chaque pas de temps t, q[i,t] unités pour chaque client i (qui prend en compte le stock, etc. dans LSP)
                 circuits_t = VRP_iteratif(data, q, t, heuristique)
+                if circuits_t == 0
+                    println("!! Problème dans la résolution du VRP !!")
+                    return 0
+                end
+
                 push!(tournees, circuits_t) # On ajoute l'ensemble des tournées effectuées au temps t
                 CoutSolcourante += Cout_Circuits(data, circuits_t)
+                #println("PB CoutSolcourant après VRP = ", CoutSolcourante)
             else
                 push!(tournees,[]) # Pour signifier qu'aucune tournée n'est effectuée au temps t
             end
         end
 
-        if nbIte == 0 # Initialisation de laa meilleure solution
+        if nbIte == 0 # Initialisation de la meilleure solution
             bestSol = [p, y, I, q, tournees] # Mémorisation de la meilleure solution
             CoutbestSol = CoutSolcourante
         elseif CoutbestSol > CoutSolcourante
@@ -75,24 +79,18 @@ function PDI_heuristique(data, heuristique, filename)
             CoutbestSol = CoutSolcourante
         end
         
-        println("PB ERREUR ?", length(tournees)==l)
         # Mise à jour des coûts SC
+        # On a length(tournees) qui vaut l
         for t_tournee in 1:length(tournees) # t_tournee est le pas de temps considéré pour l'ensemble de tournée en cours d'étude
             elems_t = [] # Ensemble des revendeurs livrés en t
             for circuit in tournees[t_tournee] 
                 for ind_elem in 1:length(circuit) 
                     push!(elems_t, circuit[ind_elem])
-                    if ind_elem == 1 || circuit[ind_elem] == 0 # Dans ce cas circuit[ind_elem] vaut 0 (le dépôt) et on ne veut pas de SC[i,t] pour i = 0, on passe
-                        # SC va de 1 à n (sans le 0) donc pas +1 mais plutôt ne pas traiter qd circuit[ind_elem]=0
-
-                        # PB pq des fois ind_elem != 1 et circuit[ind_elem] = 0??
-                        if ind_elem !=1
-                            pritnln("PB ind_elem = ", ind_elem, " et circuit[ind_elem]=", circuit[ind_elem])
-                        end
-
-                        # SC[circuit[ind_elem], t_tournee] = c[circuit[length(circuit)]+1, circuit[ind_elem]+1] + c[circuit[ind_elem]+1, circuit[ind_elem+1]+1] - c[circuit[length(circuit)]+1, circuit[ind_elem+1]+1]
+                    if ind_elem == 1 || circuit[ind_elem] == 0 # Seule la première partie du OU (||) suffit 
+                        # Dans ce cas circuit[ind_elem] vaut 0 (le dépôt) et on ne veut pas de SC[i,t] pour i = 0, on passe
                         continue
                     elseif ind_elem == length(circuit)
+                        # Le premier indice de SC va de 1 à n (sans le 0) donc pas +1 mais plutôt ne pas traiter qd circuit[ind_elem]=0
                         SC[circuit[ind_elem], t_tournee] = c[circuit[ind_elem-1]+1, circuit[ind_elem]+1] + c[circuit[ind_elem]+1, circuit[1]+1] - c[circuit[ind_elem-1]+1, circuit[1]+1]
                
                     else # Si ind_elem != 1 && ind_elem != length(circuit)
@@ -146,6 +144,7 @@ function PDI_heuristique(data, heuristique, filename)
                 end
             end
         end
+
         nbIte += 1
     end
 
@@ -153,31 +152,32 @@ function PDI_heuristique(data, heuristique, filename)
         # Une solution est de la forme [p, y, I, q, tournees]
         p, y, I, q, tournees = bestSol
 
-        # pt (Variable de production): quantité produite à la période t. (se déduit de qit et Iit)
+        # pt (Variable de production): quantité produite à la période t.
         # yt (Variable de lancement): variable binaire qui vaut 1 si une production est lancée à la période t, et 0 sinon. (se déduit de pt)
         # Iit (Variable de stockage): quantité en stock à la fin de la période t pour i. (se déduit du stock de départ, de la demande en i et de qit)
         # qit (Variable d’approvisionnement): quantité produite pour le revendeur i à la période t.
         # tournees ensemble des tournées (càd ensemble de tournées pour tous les pas de temps).
 
         # On représente donc une solution par un graphe décrivant l'ensemble des tournées pour chaque pas de temps et 
-        # avec la somme des q[i,t] à transporter par le camion sur chaque arc
+        # avec la quantité produite pour le revendeur i à la période t (q[i,t]) indiquée sur chaque noeud i
         for t in 1:length(tournees)
             if tournees[t] != []
                 WritePngGraph_Boites(data, q, t, tournees[t], filename)
             end
         end
+        println("Quantité à produire à chaque période : ", p)
     end
 
     return bestSol, CoutbestSol
 end
 
-# Test 
-pathFileData = "PRP_instances/B_200_instance30.prp"
-# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+# ----- Tests -----
+
+#pathFileData = "PRP_instances/B_200_instance30.prp"
+#pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+pathFileData = "PRP_instances/B_100_instance30.prp" #693092 pour nbite=2 #676261 pour nbite = 3,4,5 et 15
 data = Read_file(pathFileData)
 
-bestSol, CoutbestSol = PDI_heuristique(data, "CW")
+bestSol, CoutbestSol = PDI_heuristique(data, "CW", 0)
 println("Solution de coût ", CoutbestSol)
-
-# PB on livre à chaque pas de temps q[i,t] pour chaque client i, on ne peut pas livrer ce qu'il y avait en reserve au dépôt ? Non c'est bon,
-# q[i,t] comprends les 2
+# PB il faut aussi donner les pt pou caractériser une solution !

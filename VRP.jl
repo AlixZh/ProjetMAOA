@@ -20,11 +20,11 @@ function PL_VRP(data, demande, t, affichage)
     k = data["k"] # k le nombre de véhicules
     Q = data["Q"] # Q la capacité maximale de chaque véhicule
 	n = data["n"] # n le nombre de clients
-
 	cout = matrix_cout(data) # le cout de transport du client i (0:n) au j (0:n) (l'indice 1 est le centre de depot) 	
+	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
 	# Création d'un modèle. Ce modèle fera l'interface avec le solveur CPLEX
-	m = Model(CPLEX.Optimizer)
+	m = Model(optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_EPINT" => 1e-15 )) # Pour que les variables binaires soient bien 0 ou 1
 
 	# Création des variables
 	@variable(m, x[0:n, 0:n], Bin) # x[i,j] associé à l'arête (i,j)
@@ -34,7 +34,7 @@ function PL_VRP(data, demande, t, affichage)
 	@variable(m, 0<= w[1:n] <=Q) # indice 1 correspond au client 1
 	
 	# Fonction objectif
-	@objective(m, Min, sum(cout[i+1,j+1]*x[i,j] for i in 0:n for j in 0:n)) # PB soit sum(x .*cout) # C'est-à-dire 
+	@objective(m, Min, sum(cout[i+1,j+1]*x[i,j] for i in 0:n for j in 0:n)) # C'est-à-dire sum(x .*cout) 
 	
 	# Ajout des contraintes dans le modèle
 	@constraint(m, sum(x[0,:])<=k) # Contrainte (6)
@@ -102,7 +102,6 @@ function VRP_to_Circuit(data, x)
     Paramètres : 
     data le dictionnaire contenant les données de l'instance
 	x les valeurs des variables binaires xij qui vallent 1 si un véhicule utilise l’arc (i, j) 
-	filename le nom sous lequel on veut enregistrer le graphe (0 si on ne veut pas l'enregistrer) 
     """
 
 	# Récupération des données
@@ -137,17 +136,11 @@ function VRP_to_Circuit(data, x)
 		end
 	end
 
-	# if filename != 0
-	# 	#PB  à tester
-	# 	# On enregistre le graphe dans le répertoire courant 
-	# 	WritePngGraph_Boites(data, q, t, circuits, filename)
-	# end
-
 	return circuits
-
 end
 
-# # Tests
+# ----- Tests -----
+
 # pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
 # data = Read_file(pathFileData)
 
@@ -162,23 +155,3 @@ end
 # println("Circuits =", circuits)
 
 # PB Voir VRP_Heuristique pour évaluer le coût des circuits
-
-# #PB tests
-# boites = [[0,1,2],[4,5,6],[3,7,8]]
-# temp_boites = boites
-# for ind_boite in 1:length(boites)
-# 	boites[ind_boite] = []
-# end
-# println("boites = ", boites)
-# println("temp_boites = ", temp_boites)
-
-
-
-# bo = [1,2,0,1,2,7,0,1,3]
-# # filter!(e->e!=0, bo)
-# insert!(bo, 1, 9)
-# println(bo)
-println(0%3)
-println(1%3)
-println(2%3)
-println(3%3)

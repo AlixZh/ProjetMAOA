@@ -16,27 +16,17 @@ function PL_LSP(data, SC, affichage)
     l = data["l"] # l horizon de planification
     f = data["f"] # f coût fixe par période de production
     u = data["u"] # u coût unitaire
+    k = data["k"] # k le nombre de véhicules
+    Q = data["Q"] # Q la capacité maximale de chaque véhicule
     d = data["d"] # d tableau de dimension n*l, d[i,t] exprime la demande du revendeur i au temps t
     h = data["h"] # h tableau de dimension n, h[i] exprime le coût de stockage unitaire du revendeur i
     L = data["L"] # L tableau de dimension n, L[i] exprime la capacité de stockage maximale chez le revendeur i
     L0 = data["L0"] # L0 tableau de dimension n, L0[i] exprime la quantité en stock à la fin de la période 0 (càd au début) pour i 
     M = data["C"] # M constante big M qui se doit d'être supérieure à toute valeur raisonnable que peut prendre la quantité produite sur une période
-
-    #PB +1 aux indices de h, L et L0 ?
-#    println("h=",h)
-#    println("h(1)=",h[1])
-#    println("l=",l)
-#    println("n=",n)
-#    println("L=",L)
-#    println("L[1]=",L[1])
-#    println("data[L0]=",data["L0"])
-#    println("h(n)=",h[n])
-#    println("u=",u)
-#    println("f=",f)
-#    println("d=",d)
+    # Pour rappel, tous les indices de h, L et L0 doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
 
     # Création d'un modèle, ce modèle fera l'interface avec le solveur CPLEX
-    m = Model(CPLEX.Optimizer)
+    m = Model(optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_EPINT" => 1e-15 )) # Pour que les variables binaires soient bien 0 ou 1
 
     # Création des variables
     @variable(m, 0<=p[1:l]) # p tableau de dimension l, p[t] exprime la quantité produite à la période t
@@ -49,10 +39,10 @@ function PL_LSP(data, SC, affichage)
 
     # Fonction objectif
     if SC == 0
-        #println("PB SANS heuristique")
+        # LSP normal (sans heuristique PDI)
         @objective(m, Min, sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t] for i = 1:n) for t = 1:l ) )
     else
-        #println("PB AVEC heuristique")
+        # LSP dans le cadre de l'heuristique PDI
         @objective(m, Min, sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t]+SC[i,t]*z[i,t] for i = 1:n) for t = 1:l ) )
         
         # Ajout des contraintes couplantes entre les variables utiles à l'heuristique PDI et les variables de production dans le modèle
@@ -77,6 +67,7 @@ function PL_LSP(data, SC, affichage)
        @constraint(m, I[0,t-1] + p[t] == sum(q[i,t] for i = 1:n) + I[0,t] ) # Contrainte (1)
        @constraint(m, p[t] <= M*y[t]) # Contrainte (3)
        @constraint(m, I[0,t-1] <= L[1]) # Contrainte (4) 
+       @constraint(m, sum(q[i,t] for i in 1:n) <= Q*k) # Ajout de cette contrainte pour que le VRP soit réalisable (la quantité à distribuer ne doit pas excéder la capacité maximale totale pour chaque pas de temps)
 
        for i in 1:n
            @constraint(m, I[i,t-1] + q[i,t] == d[i,t] + I[i,t] ) # Contrainte (2)
@@ -154,15 +145,15 @@ function PL_LSP(data, SC, affichage)
     return value.(p), value.(y), value.(I), value.(q) # On récupère les valeurs des variables de décision
 end
 
-# Tests
-# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
-# data = Read_file(pathFileData)
-# p, y, I, q = PL_LSP(data, 0, false)
-# println("p=", p)
-# println("y=", y)
-# println("I=", I)
-# println("q=", q)
+# ----- Tests -----
 
-#PB y pas binaire ?
+pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+data = Read_file(pathFileData)
+p, y, I, q = PL_LSP(data, 0, false)
+println("p=", p)
+println("y=", y)
+println("I=", I)
+println("q=", q)
 
 # PB régler les import en haut des fichiers
+# PB régler les commentaires dans les tests (tout mettre en commentaire sauf PDI)
