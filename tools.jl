@@ -216,7 +216,7 @@ end
 # 	WritePng_visualization_Graph(G, data, qt, edge_colours, filename * "_" * string(t))
 # end
 
-function WritePng_visualization_Graph(G, data, clients_t, qt, edge_colours, filename)
+function WritePng_visualization_Graph(G, data, clients_t, qt, edge_colours, node_colours, coordx_t, coordy_t, filename)
 	"""
 	Permet d'enregistrer dans le répertoire courant un graphe passé en entrée en format Png
 	Paramètres : 
@@ -225,10 +225,20 @@ function WritePng_visualization_Graph(G, data, clients_t, qt, edge_colours, file
 	clients_t l'ensemble des noeuds à traiter pour ce pas de temps
 	qt un tableau de demande pour chaque noeud, qt[i] représente la demande du noeud i pour ce pas de temps 
 	edge_colours la couleur des arcs
+	node_colours la couleur des noeuds
+	coordx_t l'ensemble des coordonnées x des noeuds
+	coordy_t l'ensemble des coordonnées y des noeuds
 	filename le nom du fichier sous lequel on veut enregistrer l'image
 	"""
-	gp = gplot(G, layout = stressmajorize_layout, nodelabel=[(clients_t[i], qt[i]) for i in 1:length(clients_t)], edgelinewidth = [10000*length(clients_t) for e in edges(G)], edgestrokec=edge_colours, nodefillc=edge_colours)
+	println("test0") # PB bien formuler cette fonction sans les print degueu
+	#locs_x, locs_y = spring_layout(G,coordx_t,coordy_t)
+	println("test1")
+	#gp = gplot(G, locs_x=coordx_t, locs_y=coordy_t, nodelabel=[(clients_t[i], qt[i]) for i in 1:length(clients_t)], edgelinewidth = [10000*length(clients_t) for e in edges(G)], edgestrokec=edge_colours, nodefillc=node_colours) # PB version initial d'Emilie
+	# gp = gplot(G, coordx_t, coordy_t, nodelabel=[(clients_t[i], qt[i]) for i in 1:length(clients_t)], edgelinewidth = [150*length(clients_t) for e in edges(G)], edgestrokec=edge_colours, nodefillc=node_colours) # PB version 12/10 matin qui marche 
+	gp = gplot(G, coordx_t, coordy_t, nodelabel=[(clients_t[i], qt[i]) for i in 1:length(clients_t)], edgelinewidth = [150*length(clients_t) for e in edges(G)], edgestrokec=edge_colours, nodefillc=node_colours)
+	println("test2")
 	draw(PNG(filename, 1.5*length(clients_t)cm, 1.5*length(clients_t)cm), gp) 
+	println("test3")
 end
 
 function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a partir de PDI_heuristique
@@ -252,6 +262,7 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 		end
 	end
 
+	println("PB clients_t =", clients_t)
 	dict = Dict() # Dictionnaire qui associe à chaque élément son indice dans clients_t
 	for ind in 1:length(clients_t)
 		if !(clients_t[ind] in keys(dict))
@@ -259,16 +270,22 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 		end
 	end
 
+	dictEdge = Dict() # Dictionnaire qui associe à chaque arc sa couleur
+
+	println("PB dict =", dict)
+
 	G = DiGraph(length(clients_t))
 
 	# Position des noeuds #PB pos des noeuds definie
 	coord = data["coord"]
-	coords_t = []
+	coordx_t = [0 for i in 1:length(clients_t)]
+	coordy_t = [0 for i in 1:length(clients_t)]
 	for i in clients_t
-		push!(coords_t, coord[i+1])
+		coordx_t[dict[i]] = coord[i+1][1]
+		coordy_t[dict[i]] = coord[i+1][2]
 	end
 
-	edge_colours = []
+	node_colours = [colorant"blue" for i in 1:length(clients_t)]
 
 	nb_circuits = length(circuits)
 	println("PB NB CIRCUIT = ", nb_circuits)
@@ -277,7 +294,7 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 	# g = 0
 	# b = 0
 
-	couleurs = distinguishable_colors(nb_circuits, colorant"blue")
+	couleurs = distinguishable_colors(nb_circuits, [RGB(1,1,1), RGB(0,0,0)], dropseed=true)
 	for circuit in circuits # Un des circuit au temps t
 		# sommeqit = 0
 		# for i in circuit
@@ -314,11 +331,14 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 		# 		g = 0
 		# 	end
 		# end
-
+		
+		node_colours[1] = RGBA(0,0,1) # Puisque dict[0]=1, on met donc le noeud du dépôt en bleu
 		for (i, j) in zip(circuit[1:end-1], circuit[2:end])
+			#println("PB i=",i, " et j=", j)
 			add_edge!(G, dict[i], dict[j]) #, sommeqit)
 			#println("PB Ajout arc entre ", dict[i], " càd ", i, " et ", dict[j], " càd ", j)
-			push!(edge_colours, couleurs[num_circuit])
+			dictEdge[(dict[i], dict[j])] = couleurs[num_circuit]
+			node_colours[dict[j]] = couleurs[num_circuit] # La couleur du sommet j
 
 			if j == 0 #PB
 				println("PB j=", j)
@@ -332,8 +352,15 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 
 		add_edge!(G, dict[circuit[end]], 1) #, sommeqit) # Normalement sommeqit vaut 0 ici puisque c'est l'arc qui revient au dépôt
 		#println("PB Ajout arc entre ", dict[circuit[end]], " càd ", circuit[end], " et 1 ")
-		push!(edge_colours, couleurs[num_circuit])
+		dictEdge[(dict[circuit[end]], 1)] = couleurs[num_circuit]
 		num_circuit += 1
+	end
+
+	edge_colours = []
+	for (e_idx, e) in enumerate(edges(G))
+        i = src(e)
+        j = dst(e)
+		push!(edge_colours, dictEdge[(i,j)])
 	end
 
 	# Création de qt
@@ -343,12 +370,15 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 		push!(qt, q[i,t])
 	end
 
-	WritePng_visualization_Graph(G, data, clients_t, qt, edge_colours, filename * "_" * string(t))
+	WritePng_visualization_Graph(G, data, clients_t, qt, edge_colours, node_colours, coordx_t, coordy_t, filename * "_" * string(t))
 end
 
-#Tests
-pathFileData = "PRP_instances/B_200_instance30.prp"
-# pathFileData = "PRP_instances/A_014_ABS2_15_1.prp"
+# ----- Tests -----
+
+#pathFileData = "PRP_instances/B_200_instance30.prp"
+#pathFileData = "PRP_instances/A_014_ABS2_15_1.prp"
+
+pathFileData = "PRP_instances/B_200_instance1.prp"
 
 data = Read_file(pathFileData)
 # println(data)
