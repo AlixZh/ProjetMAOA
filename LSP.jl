@@ -1,8 +1,6 @@
 using JuMP
 using CPLEX
 
-#include("tools.jl")
-
 function PL_LSP(data, SC, affichage)
     """
     Paramètres : 
@@ -73,8 +71,6 @@ function PL_LSP(data, SC, affichage)
            @constraint(m, I[i,t-1] + q[i,t] == d[i,t] + I[i,t] ) # Contrainte (2)
            @constraint(m, I[i,t-1] + q[i,t] <= L[i+1] ) # Contrainte (5)
         end
-    # On n'en n'a pas besoin ici mais il peut être important de nommer les variables pour récupérer la solution duale
-    # Pour l'afficher, on fera println("\t c1 = ", -dual(c1)) # la fonction dual renvoie le coût réduit qui est l'opposé de la variable duale en maximisation
     end
 
     # Pour le debug :
@@ -115,26 +111,6 @@ function PL_LSP(data, SC, affichage)
 			println("\t I = ", value.(I))
 			println("\t q = ", value.(q))
             
-            # for i= 1:l
-            #     print("\t p[",i,"] = ", value(p[i]))
-            # end
-            # println("")
-            # for i= 1:l
-            #     print("\t y[",i,"] = ", value(y[i]))
-            # end
-            # println("")
-            # for i= 1:n
-            #     for j= 1:l
-            #         print("\t I[",i,",",j,"] = ", value(I[i,j]))    
-            #     end
-            #     println("")
-            # end
-            # for i= 1:n
-            #     for j= 1:l
-            #         print("\t q[",i,",",j,"] = ", value(q[i,j]))
-            #     end
-            #     println("")
-            # end
             println("Temps de résolution :", solve_time(m))
         else
             println("Problème lors de la résolution")
@@ -154,6 +130,3 @@ end
 # println("y=", y)
 # println("I=", I)
 # println("q=", q)
-
-# PB régler les import en haut des fichiers
-# PB régler les commentaires dans les tests (tout mettre en commentaire sauf PDI)

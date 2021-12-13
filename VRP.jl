@@ -1,12 +1,6 @@
 using JuMP
 using CPLEX
 
-#include("tools.jl")
-
-# const OPTIMAL = JuMP.MathOptInterface.OPTIMAL
-# const INFEASIBLE = JuMP.MathOptInterface.INFEASIBLE
-# const UNBOUNDED = JuMP.MathOptInterface.DUAL_INFEASIBLE;
-
 function PL_VRP(data, demande, t, affichage)
     """
     Paramètres : 
@@ -28,8 +22,10 @@ function PL_VRP(data, demande, t, affichage)
 
 	# Création des variables
 	@variable(m, x[0:n, 0:n], Bin) # x[i,j] associé à l'arête (i,j)
-	# for i in 0:n # PB
-    #     delete(m, x[i, i]) # On peut supprimer les variables x[i,i] comme il n'y a pas d'arête d'un noeud vers lui-même
+
+	# On aurait pu supprimer les variables x[i,i] comme il n'y a pas d'arête d'un noeud vers lui-même
+	# for i in 0:n 
+    #     delete(m, x[i, i])
     # end
 	@variable(m, 0<= w[1:n] <=Q) # indice 1 correspond au client 1
 	
@@ -55,8 +51,6 @@ function PL_VRP(data, demande, t, affichage)
 
 	if affichage
 		# Affichages
-		#for e in edges(G)  
-		#if(src(e)!=1 && dst(e)!=1)
 		#Affichage du modèle
 		println("Affichage du modèle avant résolution:")
 		print(m)
@@ -84,11 +78,12 @@ function PL_VRP(data, demande, t, affichage)
 			println("Valeur optimale = ", objective_value(m))
 			println("Solution optimale :")
 			println("\t x = ", value.(x))
-			println("\t x = ", value.(w))
+			println("\t w = ", value.(w))
 			println("Temps de résolution :", solve_time(m))
 		else
 			println("Problème lors de la résolution")
 		end
+		
 	else # Sans l'affichage, il faut qd même optimiser
         optimize!(m)
     end
@@ -153,5 +148,3 @@ end
 
 # circuits = VRP_to_Circuit(data, q, x)
 # println("Circuits =", circuits)
-
-# PB Voir VRP_Heuristique pour évaluer le coût des circuits

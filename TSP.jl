@@ -1,8 +1,6 @@
 using JuMP
 using CPLEX
 
-#include("tools.jl")
-
 function PL_TSP(data, client_t, affichage)
     """
     Paramètres : 
@@ -10,7 +8,6 @@ function PL_TSP(data, client_t, affichage)
     clients_t l'ensemble de client à traiter (on ne traite que les clients qui ont une demande pour ce pas de temps)
     affichage qui vaut true si on veut afficher les solutions trouvées
     """
-    # PB sur tous les fichiers : verifier que toutes les donnees sont utilisees + indices +1 (reste le fichier tools a check)
     # Récupération des données
     cout = matrix_cout(data) # le cout de transport du client i (1:n+1) au j (1:n+1) (l'indice 1 est le centre de depot) 	
 	# Pour rappel, tous les indices de cout doivent être augmentés de 1 par rapport aux indices de l'énoncé (en julia, les indices commencent à 1)
@@ -38,7 +35,7 @@ function PL_TSP(data, client_t, affichage)
     
     # Pour le debug :
     # Ecrit sur disque le PL au format lp
-    # write_to_file(m, "model_TSP.lp")
+    # write_to_file(m, "model_TSP_1.lp")
 
     if affichage
     # Affichages
@@ -81,7 +78,8 @@ function PL_TSP(data, client_t, affichage)
         end
     else # Sans l'affichage, il faut qd même optimiser
         optimize!(m)
-        while !is_tsp_solved(m, value.(x))
+
+        while !is_tsp_solved(m, x)
             optimize!(m)
         end
     end
@@ -97,7 +95,7 @@ function is_tsp_solved(m, x)
     N = size(x)[1] # Va de 1 à N
     x_val = JuMP.value.(x)
 
-    # find cycle
+    # Trouver un cycle
     cycle_idx = Int[]
     push!(cycle_idx, 1)
     while true
@@ -108,11 +106,8 @@ function is_tsp_solved(m, x)
             push!(cycle_idx, idx)
         end
     end
-    println("cycle_idx: ", cycle_idx)
-    println("Length: ", length(cycle_idx), " et N=", N)
-    if length(cycle_idx) < N
-        println("PB Ajout d'une contrainte")
-        println("PB : ", sum(x[cycle_idx[i],cycle_idx[i+1]] for i in 1:length(cycle_idx)-1) + x[cycle_idx[length(cycle_idx)],cycle_idx[1]] ,"<=", length(cycle_idx)-1)
+    
+    if length(cycle_idx) < N # On ajoute la contrainte associé au cycle si il n'est pas de taille N 
         @constraint(m, sum(x[cycle_idx[i],cycle_idx[i+1]] for i in 1:length(cycle_idx)-1) + x[cycle_idx[length(cycle_idx)],cycle_idx[1]] <= length(cycle_idx)-1)
         return false
     end
@@ -156,11 +151,11 @@ end
 
 # ----- Tests -----
 
-pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
-data = Read_file(pathFileData)
-client_t = [0,1,2,3,4,5,6,7,8]
-x = PL_TSP(data, client_t, false)
-println("x = ", x)
+# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+# data = Read_file(pathFileData)
+# client_t = [0,1,2,3,4,5,6,7,8]
+# x = PL_TSP(data, client_t, false)
+# println("x = ", x)
 
-circuits = TSP_to_Circuit(data, client_t, x)
-println("circuits = ", circuits)
+# circuits = TSP_to_Circuit(data, client_t, x)
+# println("circuits = ", circuits)

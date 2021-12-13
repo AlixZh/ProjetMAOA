@@ -10,7 +10,7 @@ function Read_file(filename)
 	Paramètres : 
     filename le chemin menant vers le fichier de l'instance à lire
 	"""
-	#declaration et initialisation
+	# Déclaration et initialisation
 	ligne_demande=false 
 	typeA=0
 	n=0 # nb clients
@@ -70,14 +70,12 @@ function Read_file(filename)
 		end
 	end
 	if(typeA==1)
-		#stock au depot non limite
+		#stock au depot non limité
 		#capacite de production infinie
 		d=Dict("type"=>typeA,"n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k)
-		#return n,L0,L,coord,h,l,d,u,f,C,Q,k
 		return d
 	elseif (typeA==2)
 		d=Dict("type"=>typeA,"n" => n,"L0" => L0,"L" => L,"coord" => coord,"h" => h,"l" => l,"d" => d,"u" => u,"f" => f,"C" => C,"Q" => Q,"k" => k,"mc" => mc)
-		#return n,L0,L,coord,h,l,d,u,f,C,Q,k,mc
 		return d
 	else
 		println("probleme fichier instance : ",filename)
@@ -162,7 +160,7 @@ function WritePng_visualization_Graph(G, data, clients_t, qt, edge_colours, node
 	draw(PNG(filename, 1.5*length(clients_t)cm, 1.5*length(clients_t)cm), gp) 
 end
 
-function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a partir de PDI_heuristique à tester
+function WritePngGraph_Boites(data, q, t, circuits, filename)
 	"""
 	Permet, à partir d'un ensemble de boîtes, de créer le graphe associé et de l'enregistrer dans le répertoire courant
 	Paramètres : 
@@ -203,66 +201,18 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 
 	nb_circuits = length(circuits)
 	num_circuit = 1
-	# r = 1 #PB ces affichages
-	# g = 0
-	# b = 0
 
 	couleurs = distinguishable_colors(nb_circuits, [RGB(1,1,1), RGB(0,0,0)], dropseed=true) # Pour avoir un ensemble de couleurs distinguables
 	for circuit in circuits # Un des circuits au temps t
-		# sommeqit = 0
-		# for i in circuit
-		# 	if i != 0 # Le dépôt n'a pas de demande
-		# 		sommeqit += q[i,t] # L'ensemble de charge à transporter par le camion sur ce circuit (inférieur à Q)
-		# 	end
-		# end
-
-		# couleur = RGBA(r, g, b) # La couleur pour ce circuit
-
-		# if num_circuit == 0
-		# 	r = 0
-		# 	b = 1
-		# 	g = 0
-		# end
-		# if num_circuit == 1
-		# 	r = 0
-		# 	b = 0
-		# 	g = 1
-		# end
-		# if num_circuit%3 == 0
-		# 	r = r + 0.5
-		# 	if r>1
-		# 		r = 0
-		# 	end
-		# elseif num_circuit%3 == 1
-		# 	b = b + 0.5
-		# 	if b>1
-		# 		b = 0
-		# 	end
-		# elseif num_circuit%3 == 2
-		# 	g = g + 0.5
-		# 	if g>1
-		# 		g = 0
-		# 	end
-		# end
 		
 		node_colours[1] = RGBA(0,0,1) # Puisque dict[0]=1, on met donc le noeud du dépôt en bleu
 		for (i, j) in zip(circuit[1:end-1], circuit[2:end])
-			add_edge!(G, dict[i], dict[j]) #, sommeqit)
+			add_edge!(G, dict[i], dict[j]) 
 			dictEdge[(dict[i], dict[j])] = couleurs[num_circuit] # On ajoute au dictionnaire de couleur la couleur de l'arc (i,j)
 			node_colours[dict[j]] = couleurs[num_circuit] # La couleur du sommet j
-
-			if j == 0 #PB
-				println("PB j=", j)
-				println("PB circuit = ", circuit)
-			end
-			
-			# if j != 0 # Le dépôt n'a pas de demande # PB normalement pas besoin puisqu'aucun arc allant vers 0 sauf le dernier arc qui n'est pas compté ici
-			# 	sommeqit -= q[j,t] # On dépose q[j,t] au sommet j
-			# end
 		end
 
-		add_edge!(G, dict[circuit[end]], 1) #, sommeqit) # Normalement sommeqit vaut 0 ici puisque c'est l'arc qui revient au dépôt
-		#println("PB Ajout arc entre ", dict[circuit[end]], " càd ", circuit[end], " et 1 ")
+		add_edge!(G, dict[circuit[end]], 1) 
 		dictEdge[(dict[circuit[end]], 1)] = couleurs[num_circuit]
 		num_circuit += 1
 	end
@@ -275,8 +225,8 @@ function WritePngGraph_Boites(data, q, t, circuits, filename) #PB affichage a pa
 		push!(edge_colours, dictEdge[(i,j)])
 	end
 
-	# Création de qt
-	qt = [0]
+	# Création de qt, les q[i,t] pour le pas de temps t considéré et pour les clients considéré seulement 
+	qt = [0.0] # Le dépôt n'a pas de demande
 	for i in clients_t[2:length(clients_t)]
 		push!(qt, q[i,t])
 	end
@@ -286,10 +236,7 @@ end
 
 # ----- Tests -----
 
-#pathFileData = "PRP_instances/B_200_instance30.prp"
-#pathFileData = "PRP_instances/A_014_ABS2_15_1.prp"
-
-# pathFileData = "PRP_instances/B_200_instance15.prp"
+# pathFileData = "PRP_instances/B_200_instance30.prp"
 
 # data = Read_file(pathFileData)
 # println(data)
@@ -299,15 +246,3 @@ end
 # println(matrix_cout(data))
 
 # WritePngGraph_Boites(data, q, 2, boites, "graphe") # boites provient de VRP_Heuristiques.jl et q de LSP.jl
-
-
-
-
-
-
-
-
-
-
-
-

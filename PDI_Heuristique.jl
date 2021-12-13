@@ -2,20 +2,21 @@ using JuMP
 using CPLEX
 using DelimitedFiles
 
-# include("tools.jl")
-# include("LSP.jl")
-# include("VRP_Heuristiques.jl")
-# include("VRP.jl")
+include("tools.jl")
+include("LSP.jl")
+include("VRP_Heuristiques.jl")
+include("VRP.jl")
 
-function PDI_heuristique(data, heuristique, filename)
+function PDI_heuristique(data, heuristique, heurTsp, filename)
     """
     Paramètres : 
     data le dictionnaire contenant les données de l'instance
-	heuristique une chaine de caractère déterminant quelle heuristique on va utiliser (ou "PL" si on veut résoudre exactement avec le PL)
+	heuristique une chaine de caractère déterminant quelle heuristique on va utiliser pour VRP (ou "PL" si on veut résoudre exactement avec le PL)
+	heurTsp une chaine de caractère déterminant si pour résoudre le TSP, on utilise une heuristique ("Heur") ou le PL ("PL")
 	filename le nom sous lequel on veut enregistrer les graphes (0 si on ne veut pas les enregistrer) 
     """
 
-    nbIteMax = 3 #PB a adapter
+    nbIteMax = 3
 
     # Récupération des données 
     n = data["n"] # n le nombre de revendeurs (en comptant le fournisseur)
@@ -47,11 +48,11 @@ function PDI_heuristique(data, heuristique, filename)
 
         # Coûts engendrés par le LSP (stockage + production)
         CoutSolcourante = sum(u*p[t] + f*y[t] + sum(h[i+1]*I[i,t] for i = 1:n) for t = 1:l )
-        #println("PB CoutSolcourante du LSP = ", CoutSolcourante)
 
         tournees = []
         # Résolution, pour chaque pas de temps, du VRP
         for t=1:l
+            # Notons que ce n'est pas pcq y[t] = 1 qu'on va forcément livrer aux clients (on peut décider de tout stocker), c'est bien q[i,t] qu'il faut prendre en compte
             if sum(q[i,t] for i in 1:n) > 0 # Si une production est lancée pour des clients à la période t, sinon ne rien faire à ce temps
                 # Résoudre VRP avec les paramètres : p[t] quantité produite à la période t, 
                 # y[t] vaut 1 si une production est lancée à la période t, et 0 sinon,
@@ -59,8 +60,7 @@ function PDI_heuristique(data, heuristique, filename)
                 # q[:,t] la quantité produite pour chaque revendeur i à la période t
                 # Avec VRP, on livre à chaque pas de temps t, q[i,t] unités pour chaque client i (qui prend en compte le stock, etc. dans LSP)
                 
-                # PB ce n'est pas pcq y[t] = 1 qu'on va forcément livrer aux clients (on peut décider de tout stocker)
-                circuits_t = VRP_iteratif(data, q, t, heuristique)
+                circuits_t = VRP_iteratif(data, q, t, heuristique, heurTsp)
                 if circuits_t == 0
                     println("!! Problème dans la résolution du VRP !!")
                     return 0
@@ -68,7 +68,6 @@ function PDI_heuristique(data, heuristique, filename)
 
                 push!(tournees, circuits_t) # On ajoute l'ensemble des tournées effectuées au temps t
                 CoutSolcourante += Cout_Circuits(data, circuits_t)
-                #println("PB CoutSolcourant après VRP = ", CoutSolcourante)
             else
                 push!(tournees,[]) # Pour signifier qu'aucune tournée n'est effectuée au temps t
             end
@@ -97,13 +96,6 @@ function PDI_heuristique(data, heuristique, filename)
                         SC[circuit[ind_elem], t_tournee] = c[circuit[ind_elem-1]+1, circuit[ind_elem]+1] + c[circuit[ind_elem]+1, circuit[1]+1] - c[circuit[ind_elem-1]+1, circuit[1]+1]
                
                     else # Si ind_elem != 1 && ind_elem != length(circuit)
-                        # println("PB c[circuit[length(circuit)]+1, circuit[ind_elem]+1]",c[circuit[length(circuit)]+1, circuit[ind_elem]+1])
-                        # println("PB c[circuit[ind_elem]+1, circuit[ind_elem+1]+1] ",c[circuit[ind_elem]+1, circuit[ind_elem+1]+1])
-                        # println("PB circuit[length(circuit)+1]", circuit[length(circuit)]+1)
-                        # println("PB circuit[ind_elem+1]+1",circuit[ind_elem+1]+1)
-                        # println("PB c[circuit[length(circuit)]+1, circuit[ind_elem+1]+1]",c[circuit[length(circuit)]+1, circuit[ind_elem+1]+1])
-                        # println("PB circuit[",ind_elem,"]", circuit[ind_elem])
-                        # println("PB SC[circuit[ind_elem], t_tournee]", SC[circuit[ind_elem], t_tournee])
                         SC[circuit[ind_elem], t_tournee] = c[circuit[ind_elem-1]+1, circuit[ind_elem]+1] + c[circuit[ind_elem]+1, circuit[ind_elem+1]+1] - c[circuit[ind_elem-1]+1, circuit[ind_elem+1]+1]
                     end 
                 end
@@ -157,7 +149,7 @@ function PDI_heuristique(data, heuristique, filename)
 
         # pt (Variable de production): quantité produite à la période t.
         # yt (Variable de lancement): variable binaire qui vaut 1 si une production est lancée à la période t, et 0 sinon. (se déduit de pt)
-        # Iit (Variable de stockage): quantité en stock à la fin de la période t pour i. (se déduit du stock de départ, de la demande en i et de qit)
+        # Iit (Variable de stockage): quantité en stock à la fin de la période t pour i. (se déduit du stock de départ, de la demande en i, de p et de qit)
         # qit (Variable d’approvisionnement): quantité produite pour le revendeur i à la période t.
         # tournees ensemble des tournées (càd ensemble de tournées pour tous les pas de temps).
 
@@ -168,6 +160,8 @@ function PDI_heuristique(data, heuristique, filename)
                 WritePngGraph_Boites(data, q, t, tournees[t], filename)
             end
         end
+
+        # Il faut aussi donner p[t] pour caractériser une solution 
         println("Quantité à produire à chaque période : ", p)
     end
 
@@ -176,22 +170,19 @@ end
 
 # ----- Tests -----
 
-#pathFileData = "PRP_instances/B_200_instance30.prp"
-#pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
-# pathFileData = "PRP_instances/B_100_instance30.prp" #693092 pour nbite=2 #676261 pour nbite = 3,4,5 et 15
-# data = Read_file(pathFileData)
+pathFileData = "PRP_instances/B_200_instance30.prp"
+# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+# pathFileData = "PRP_instances/B_100_instance30.prp" 
+data = Read_file(pathFileData)
 
-# bestSol, CoutbestSol = PDI_heuristique(data, "CW", 0)
-# println("Solution de coût ", CoutbestSol)
-# PB il faut aussi donner les pt pou caractériser une solution !
+bestSol, CoutbestSol = PDI_heuristique(data, "CW", "Heur", "GrapheB200-30")
+println("Solution de coût ", CoutbestSol)
 
-
-# Récupération des coût et des temps d'éxecution
-# Pour TSP approché (plus proche voisin parmi les restants)/TSP exact #PB
-# Pour VRP PLNE, Bin Packing, Clark Wright, Sectorielle ("PL", "BP", "CW", "Sec")
-# Dans VRP_iteratif pour le changement de boîte d'un client, soit Cout_heur_Boite soit MinCout_Ajout
-# Si length(boites) < k, ajout de boîtes vides ou couper les boîtes en 2
-heurs = ["BP", "CW", "Sec"] #, "PL"] PB PL trop long je pense
+# ----- Récupération des coût et des temps d'éxecution pour chacune des options suivantes (dans VRP_iteratif) -----
+# Pour TSP : approché (plus proche voisin parmi les restants) ou exact par PLNE (on choisira approché ici)
+# Pour VRP : PLNE, Bin Packing, Clark Wright, ou Sectorielle ("PL", "BP", "CW", "Sec")
+# Pour le changement de boîte d'un client : soit Cout_heur_Boite soit MinCout_Ajout (on choisira la seconde option ici)
+# Si length(boites) < k, ajout de boîtes vides ou couper les boîtes en 2 (on choisira la seconde option ici)
 
 function Calculs_Temps_Cout(files, heurs)
     resTempsCout = Dict()
@@ -201,7 +192,7 @@ function Calculs_Temps_Cout(files, heurs)
             data = Read_file(pathFileData)
 
             time1 = Sys.time()
-            bestSol, CoutbestSol = PDI_heuristique(data, heur, 0)
+            bestSol, CoutbestSol = PDI_heuristique(data, heur, "Heur", 0)
             time2 = Sys.time()
 
             Tdiff = time2 - time1
@@ -211,32 +202,15 @@ function Calculs_Temps_Cout(files, heurs)
     return resTempsCout
 end
 
+# heurs = ["BP", "CW", "Sec"] #, "PL"] # La résolution exacte est trop longue pour pouvoir la mettre dans le tableau
+
 # files1 = ["A3", "A4", "A5", "A6", "A10", "A62"]
-# resTempsCout1 = Calculs_Temps_Cout(files1, heurs)
-# println(resTempsCout1)
+# files2 = ["A_014_ABS96_15_5", "A_050_ABS19_50_5", "A_014_ABS11_15_1", "A_014_ABS21_15_1", "A_014_ABS31_15_1", "A_014_ABS41_15_1", "A_014_ABS51_15_1", "A_014_ABS61_15_1", "A_014_ABS71_15_1", "A_014_ABS81_15_1", "A_014_ABS91_15_1", "A_100_ABS92_100_1"]
+# files3 = ["A_050_ABS13_50_3","B_050_instance2","B_050_instance7","B_050_instance14","B_050_instance30","B_050_instance22", "B_100_instance20", "A_100_ABS1_100_1"]
+# files4 = ["B_100_instance1","B_100_instance6","B_100_instance16","B_100_instance30","A_014_ABS71_15_4","A_014_ABS80_15_4","A_014_ABS94_15_5"]
+# files5 = ["A_050_ABS1_50_2", "A_050_ABS77_50_3", "A_050_ABS78_50_2", "A_100_ABS12_100_4", "A_100_ABS20_100_3", "A_100_ABS28_100_3"]
+
+# resTempsCout = Calculs_Temps_Cout(files1, heurs)
+# println(resTempsCout)
 # # Enregistrer les données dans un fichier texte
-# writedlm("Temps_Cout_1.txt", resTempsCout1)
-
-files2 = ["A_014_ABS96_15_5", "A_050_ABS19_50_5", "A_014_ABS11_15_1", "A_014_ABS21_15_1", "A_014_ABS31_15_1", "A_014_ABS41_15_1", "A_014_ABS51_15_1", "A_014_ABS61_15_1", "A_014_ABS71_15_1", "A_014_ABS81_15_1", "A_014_ABS91_15_1", "A_100_ABS92_100_1"]
-resTempsCout2 = Calculs_Temps_Cout(files2, heurs)
-println(resTempsCout2)
-# Enregistrer les données dans un fichier texte
-writedlm("Temps_Cout_2.txt", resTempsCout2)
-
-files3 = ["A_050_ABS13_50_3","B_050_instance2","B_050_instance7","B_050_instance14","B_050_instance30","B_050_instance22", "B_100_instance20", "A_100_ABS1_100_1"]
-resTempsCout3 = Calculs_Temps_Cout(files3, heurs)
-println(resTempsCout3)
-# Enregistrer les données dans un fichier texte
-writedlm("Temps_Cout_3.txt", resTempsCout3)
-
-files4 = ["B_100_instance1","B_100_instance6","B_100_instance16","B_100_instance30","A_014_ABS71_15_4","A_014_ABS80_15_4","A_014_ABS94_15_5"]
-resTempsCout4 = Calculs_Temps_Cout(files4, heurs)
-println(resTempsCout4)
-# Enregistrer les données dans un fichier texte
-writedlm("Temps_Cout_4.txt", resTempsCout4)
-
-files5 = ["A_050_ABS1_50_2", "A_050_ABS77_50_3", "A_050_ABS78_50_2", "A_100_ABS12_100_4", "A_100_ABS20_100_3", "A_100_ABS28_100_3"]
-resTempsCout5 = Calculs_Temps_Cout(files5, heurs)
-println(resTempsCout5)
-# Enregistrer les données dans un fichier texte
-writedlm("Temps_Cout_5.txt", resTempsCout5)
+# writedlm("Temps_Cout_1.txt", resTempsCout)
