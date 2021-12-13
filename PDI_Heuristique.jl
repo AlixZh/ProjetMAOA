@@ -1,5 +1,6 @@
 using JuMP
 using CPLEX
+using DelimitedFiles
 
 # include("tools.jl")
 # include("LSP.jl")
@@ -39,7 +40,7 @@ function PDI_heuristique(data, heuristique, filename)
     while nbIte < nbIteMax
         # Résolution du problème LSP avec prise en compte des coûts de visite
         p, y, I, q = PL_LSP(data, SC, false)
-        # println("p=", p)
+        # println("p=", p) 
         # println("y=", y)
         # println("I=", I)
         # println("q=", q)
@@ -51,12 +52,14 @@ function PDI_heuristique(data, heuristique, filename)
         tournees = []
         # Résolution, pour chaque pas de temps, du VRP
         for t=1:l
-            if y[t] != 0 # Si une production est lancée à la période t, sinon ne rien faire à ce temps
+            if sum(q[i,t] for i in 1:n) > 0 # Si une production est lancée pour des clients à la période t, sinon ne rien faire à ce temps
                 # Résoudre VRP avec les paramètres : p[t] quantité produite à la période t, 
                 # y[t] vaut 1 si une production est lancée à la période t, et 0 sinon,
                 # I[:,t] la quantité en stock à la fin de la période t pour chaque revendeur i, et
                 # q[:,t] la quantité produite pour chaque revendeur i à la période t
                 # Avec VRP, on livre à chaque pas de temps t, q[i,t] unités pour chaque client i (qui prend en compte le stock, etc. dans LSP)
+                
+                # PB ce n'est pas pcq y[t] = 1 qu'on va forcément livrer aux clients (on peut décider de tout stocker)
                 circuits_t = VRP_iteratif(data, q, t, heuristique)
                 if circuits_t == 0
                     println("!! Problème dans la résolution du VRP !!")
@@ -175,9 +178,65 @@ end
 
 #pathFileData = "PRP_instances/B_200_instance30.prp"
 #pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
-pathFileData = "PRP_instances/B_100_instance30.prp" #693092 pour nbite=2 #676261 pour nbite = 3,4,5 et 15
-data = Read_file(pathFileData)
+# pathFileData = "PRP_instances/B_100_instance30.prp" #693092 pour nbite=2 #676261 pour nbite = 3,4,5 et 15
+# data = Read_file(pathFileData)
 
-bestSol, CoutbestSol = PDI_heuristique(data, "CW", 0)
-println("Solution de coût ", CoutbestSol)
+# bestSol, CoutbestSol = PDI_heuristique(data, "CW", 0)
+# println("Solution de coût ", CoutbestSol)
 # PB il faut aussi donner les pt pou caractériser une solution !
+
+
+# Récupération des coût et des temps d'éxecution
+# Pour TSP approché (plus proche voisin parmi les restants)/TSP exact #PB
+# Pour VRP PLNE, Bin Packing, Clark Wright, Sectorielle ("PL", "BP", "CW", "Sec")
+# Dans VRP_iteratif pour le changement de boîte d'un client, soit Cout_heur_Boite soit MinCout_Ajout
+# Si length(boites) < k, ajout de boîtes vides ou couper les boîtes en 2
+heurs = ["BP", "CW", "Sec"] #, "PL"] PB PL trop long je pense
+
+function Calculs_Temps_Cout(files, heurs)
+    resTempsCout = Dict()
+    for file in files
+        for heur in heurs        
+            pathFileData = "PRP_instances/" * file * ".prp"
+            data = Read_file(pathFileData)
+
+            time1 = Sys.time()
+            bestSol, CoutbestSol = PDI_heuristique(data, heur, 0)
+            time2 = Sys.time()
+
+            Tdiff = time2 - time1
+            resTempsCout[(heur, file)] = (Tdiff, CoutbestSol)
+        end
+    end
+    return resTempsCout
+end
+
+# files1 = ["A3", "A4", "A5", "A6", "A10", "A62"]
+# resTempsCout1 = Calculs_Temps_Cout(files1, heurs)
+# println(resTempsCout1)
+# # Enregistrer les données dans un fichier texte
+# writedlm("Temps_Cout_1.txt", resTempsCout1)
+
+files2 = ["A_014_ABS96_15_5", "A_050_ABS19_50_5", "A_014_ABS11_15_1", "A_014_ABS21_15_1", "A_014_ABS31_15_1", "A_014_ABS41_15_1", "A_014_ABS51_15_1", "A_014_ABS61_15_1", "A_014_ABS71_15_1", "A_014_ABS81_15_1", "A_014_ABS91_15_1", "A_100_ABS92_100_1"]
+resTempsCout2 = Calculs_Temps_Cout(files2, heurs)
+println(resTempsCout2)
+# Enregistrer les données dans un fichier texte
+writedlm("Temps_Cout_2.txt", resTempsCout2)
+
+files3 = ["A_050_ABS13_50_3","B_050_instance2","B_050_instance7","B_050_instance14","B_050_instance30","B_050_instance22", "B_100_instance20", "A_100_ABS1_100_1"]
+resTempsCout3 = Calculs_Temps_Cout(files3, heurs)
+println(resTempsCout3)
+# Enregistrer les données dans un fichier texte
+writedlm("Temps_Cout_3.txt", resTempsCout3)
+
+files4 = ["B_100_instance1","B_100_instance6","B_100_instance16","B_100_instance30","A_014_ABS71_15_4","A_014_ABS80_15_4","A_014_ABS94_15_5"]
+resTempsCout4 = Calculs_Temps_Cout(files4, heurs)
+println(resTempsCout4)
+# Enregistrer les données dans un fichier texte
+writedlm("Temps_Cout_4.txt", resTempsCout4)
+
+files5 = ["A_050_ABS1_50_2", "A_050_ABS77_50_3", "A_050_ABS78_50_2", "A_100_ABS12_100_4", "A_100_ABS20_100_3", "A_100_ABS28_100_3"]
+resTempsCout5 = Calculs_Temps_Cout(files5, heurs)
+println(resTempsCout5)
+# Enregistrer les données dans un fichier texte
+writedlm("Temps_Cout_5.txt", resTempsCout5)

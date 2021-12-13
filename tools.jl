@@ -289,16 +289,16 @@ end
 #pathFileData = "PRP_instances/B_200_instance30.prp"
 #pathFileData = "PRP_instances/A_014_ABS2_15_1.prp"
 
-pathFileData = "PRP_instances/B_200_instance15.prp"
+# pathFileData = "PRP_instances/B_200_instance15.prp"
 
-data = Read_file(pathFileData)
+# data = Read_file(pathFileData)
 # println(data)
 # println(data["n"])
 
 # println("matrice cout : ")
 # println(matrix_cout(data))
 
-WritePngGraph_Boites(data, q, 2, boites, "graphe") # boites provient de VRP_Heuristiques.jl et q de LSP.jl
+# WritePngGraph_Boites(data, q, 2, boites, "graphe") # boites provient de VRP_Heuristiques.jl et q de LSP.jl
 
 
 

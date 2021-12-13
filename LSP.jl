@@ -147,13 +147,13 @@ end
 
 # ----- Tests -----
 
-pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
-data = Read_file(pathFileData)
-p, y, I, q = PL_LSP(data, 0, false)
-println("p=", p)
-println("y=", y)
-println("I=", I)
-println("q=", q)
+# pathFileData = "PRP_instances/A_014_ABS1_15_1.prp"
+# data = Read_file(pathFileData)
+# p, y, I, q = PL_LSP(data, 0, false)
+# println("p=", p)
+# println("y=", y)
+# println("I=", I)
+# println("q=", q)
 
 # PB régler les import en haut des fichiers
 # PB régler les commentaires dans les tests (tout mettre en commentaire sauf PDI)
