@@ -123,7 +123,7 @@ function BC2(data)
 		println("optimum = ", objective_value(m)) 
 		return true,objective_value(m), solve_time(m) ,xopt,yopt,qopt,popt,relative_gap(m)
 	end
-	
+	false,0,0,0,0,0,0,0
 
 end
 
