@@ -6,8 +6,6 @@ Les données des instances seront stockées dans un dictionnaire. Les clés du d
 
 n : nombre de clients
     int
-  
-g : un graphe complet non orienté, n+1 noeuds
 
 l : nombre d'horizon
 

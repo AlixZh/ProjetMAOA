@@ -19,15 +19,16 @@ include("./toolsPDI.jl")
 #--------------------------
 
 
-function PLNE_PDI2(data)
+function PLNE_PDI2(data,branch=false)
 	"""
 	data : dictionnaire de donnees
+	branch : boolean, ajoute ou enleve les contraintes d elimination de sous tours
 	"""
 	lci=matrix_cout(data) #l'indice 1 est le centre de depot
 						  # le cout du client i et j dans lci : ldi[i+1] et ldi[j+1]
 
 	# Création d'un modèle. Ce modèle fera l'interface avec le solveur GLPK
-	m = Model(CPLEX.Optimizer)
+	m = Model(optimizer_with_attributes(CPLEX.Optimizer, "CPX_PARAM_EPINT" => 1e-15 ))
 	# Création des variables
 	@variable(m,y[1:data["l"]],Bin) #(32)
 	@variable(m,z[1:data["n"]+1, 1:data["k"],1:data["l"]],Bin)
@@ -41,7 +42,6 @@ function PLNE_PDI2(data)
 	
 
 	#contraintes
-	
 
 	for t = 1:data["l"]
 		if(t>1)
@@ -64,6 +64,7 @@ function PLNE_PDI2(data)
 			end
 		end
 		for k =1:data["k"]
+
 			@constraint(m,sum(q[i,k,t] for i=2:data["n"]+1)<= data["Q"]*z[1,k,t]) #(30)
 			@constraint(m,sum(x[1,j,k,t] for j=1:data["n"]+1 if j!=1)+sum(x[j,1,k,t] for j =1:data["n"]+1 if j!=1)==2*z[1,k,t]) #28
 			
@@ -73,55 +74,14 @@ function PLNE_PDI2(data)
 				
 				#for s in subsets([2 : data["n"]+1],myi)
 			end
-			for s in powerset([ind for ind=2:data["n"]+1],2,data["n"])
-				@constraint(m, sum(x[i,j,k,t] for i in s for j in s if i!=j) <= length(s)-1) #(29)
+			if(!branch)
+				for s in powerset([ind for ind=2:data["n"]+1],2,data["n"])
+					@constraint(m, sum(x[i,j,k,t] for i in s for j in s if i!=j) <= length(s)-1) #(29)
+				end
 			end
-
+		
 		end
 	end
-	
-	
-	#for e in edges(G)  
-	#if(src(e)!=1 && dst(e)!=1)
-	#Affichage du modèle
-	#println("Affichage du modèle avant résolution:")
-	#print(m)
-	#println()
-
-	#Résolution du problème d'optimisation linéaire m par le solveur GLPK
-	#println("Résolution par le solveur linéaire choisi")
-	
-	optimize!(m)
-	#println()
-
-	
-
-	# Mais on peut vouloir récupérer juste une information précise
-	#println("Récupération et affichage \"à la main\" d'informations précises")
-	
-	status = termination_status(m)
-
-	if status == JuMP.MathOptInterface.INFEASIBLE
-
-		println("Le problème n'est pas réalisable")
-	#elseif status == JuMP.MathOptInterface.DUAL_INFEASIBLE
-		#println("Le problème est non borné")
-	elseif status == JuMP.MathOptInterface.OPTIMAL
-		# Affiche tous les détails d'une solution à l'écran
-		#println("Affichage de tous les détails de la solution avec la commande solution_summary")
-		#println(solution_summary(m, verbose=true))
-		#println()
-		#println("Valeur optimale = ", objective_value(m))
-		#println("Solution primale optimale :")
-		#println("\t x = ", value.(x))
-		#println("Temps de résolution :", solve_time(m))
-   
-		return true,objective_value(m), solve_time(m) ,value.(x),value.(y),value.(q)
-	#else
-		#println("Problème lors de la résolution")
-	end
-	#return false,0,0,0,0
-
-	#return m
+	return m
 end
 
