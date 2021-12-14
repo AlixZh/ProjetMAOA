@@ -58,11 +58,11 @@ function execution(numAlgo,sortiename,path="./instancesTests/",pathDest="./Sorti
 				end
 			
 			end
-			#=for t=1:data["l"]
+			for t=1:data["l"]
 				if(length(res[namefile]["ens_circuit"][t])>=1)
 					WritePngGraph_Boites(data,myq , t, res[namefile]["ens_circuit"][t], pathDest*"Boite_"*namefile)
 				end
-			end=#
+			end
 			
 			println("Quantité à produire à chaque période : ", p)
 			println()
