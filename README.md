@@ -1,9 +1,9 @@
 # ProjetMAOA
 
 Projet réalisé dans le cadre de l'UE Modèles et applications en ordonnancement et optimisation combinatoire (MAOA).
-Sujet du projet : Heuristiques et PLNE compacts ou à nombre exponentiel de contraintes (Branch-and-Cut)
+Sujet du projet : Autour du problème de Production et Distribution Intégré (Production-Routing problem PRP): heuristiques et PLNE compacts ou à nombre exponentiel de contraintes (Branch-and-Cut)
 
-Ce repository est constitué de plusieurs fichiers : les fichiers de codes (BC.jl, LSP.jl, PDI1.jl, PDI2.jl, PDI_Exact.jl, PDI_Heuristique.jl, TSP.jl, Test.jl, TestPDI.jl, VRP.jl, VRP_Heuristiques.jl, tools.jl, toolsPDI.jl), MAOA_PDI_Rapport.pdf le rapport final du projet, et MAOA_Sujet.pdf l'énoncé du projet.
+Ce repository est constitué de plusieurs fichiers : les fichiers de codes (BC.jl, LSP.jl, PDI1.jl, PDI2.jl, PDI_Exact.jl, PDI_Heuristique.jl, TSP.jl, Test.jl, TestPDI.jl, VRP.jl, VRP_Heuristiques.jl, tools.jl, toolsPDI.jl), Instances_Production_Routing.pdf un document décrivant les instances, MAOA_PDI_Rapport.pdf le rapport final du projet, MAOA_TME_Sujet.pdf le sujet d'un TME effectué préalablement et utile à ce projet, PRP_instances.tgz un dossier contenant un ensemble d'instance et Sujet_Projet_Production_Routing.pdf l'énoncé du projet.
 
 ## Type des données
 
