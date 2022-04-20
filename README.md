@@ -3,6 +3,10 @@
 Projet réalisé dans le cadre de l'UE Modèles et applications en ordonnancement et optimisation combinatoire (MAOA).
 Sujet du projet : Autour du problème de Production et Distribution Intégré (Production-Routing problem PRP): heuristiques et PLNE compacts ou à nombre exponentiel de contraintes (Branch-and-Cut)
 
+But du projet : Le but du projet est de résoudre le problème PDI de façon exacte ou approchée en Julia et grâce au solveur IBM ILOG Cplex avec des heuristiques, méta-heuristiques ou grâce à la PLNE compacte ou à nombre exponentiel de contraintes (Branch-and-Cut) puis de comparer les différentes approches.
+On utilise donc la modélisation mathématiques afin de résoudre le problème de supply chain (PDI décomposé en deux problèmes : Lot-Sizing (LSP) et tournée de
+véhicules (VRP)).
+
 Ce repository est constitué de plusieurs fichiers : les fichiers de codes (BC.jl, LSP.jl, PDI1.jl, PDI2.jl, PDI_Exact.jl, PDI_Heuristique.jl, TSP.jl, Test.jl, TestPDI.jl, VRP.jl, VRP_Heuristiques.jl, tools.jl, toolsPDI.jl), Instances_Production_Routing.pdf un document décrivant les instances, MAOA_PDI_Rapport.pdf le rapport final du projet, MAOA_TME_Sujet.pdf le sujet d'un TME effectué préalablement et utile à ce projet, PRP_instances.tgz un dossier contenant un ensemble d'instance et Sujet_Projet_Production_Routing.pdf l'énoncé du projet.
 
 ## Type des données
